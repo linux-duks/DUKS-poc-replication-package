@@ -28,7 +28,7 @@ def get_commits():
 
 @app.route('/')
 def home():
-    return "This sample server serves the commit data at the '/commits' endpoint"
+    return app.send_static_file("index.html")
 
 if __name__ == '__main__':
     # Use 0.0.0.0 to make the server accessible from outside the container

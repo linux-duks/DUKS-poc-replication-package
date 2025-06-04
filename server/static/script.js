@@ -1,7 +1,7 @@
 console.log("Script linked")
 
 async function get_commits(){
-    result = await fetch("http://172.17.0.2:5000/commits")
+    result = await fetch("commits")
     console.log(result)
 }
 
