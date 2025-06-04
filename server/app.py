@@ -20,11 +20,13 @@ def get_commits():
     if request.method == "OPTIONS": # CORS preflight
         return _build_cors_preflight_response()
     elif request.method == "GET":
-        response = jsonify(pd.read_csv("../data/mock1.csv").to_dict(orient='records'))
+        commits_df = pd.read_csv("../data/mock1.csv")
+        commits_df.sort_values('author_time', axis=0, ascending=True, inplace=True)
+        response = jsonify(commits_df.to_dict(orient='records'))
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
     else:
-        raise RuntimeError("Weird - don't know how to handle method {}".format(request.method))
+        raise RuntimeError("Couldn't address request with HTTP method {}".format(request.method))
 
 @app.route('/')
 def home():
