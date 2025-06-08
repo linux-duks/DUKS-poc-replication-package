@@ -1,8 +1,8 @@
 name: kernelviz
 
-services:  
+services:
   server:
-    build: 
+    build:
       context: server/
       dockerfile: Dockerfile
     volumes:
@@ -11,4 +11,4 @@ services:
     ports:
       - 5000:5000
     stdin_open: true
-    command: python app.py
+    command: uv run python app.py

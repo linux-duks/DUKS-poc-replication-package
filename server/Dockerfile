@@ -1,19 +1,36 @@
 # Use a lightweight official Python image
 FROM python:3.12.10-slim
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file into the container
-COPY requirements.txt .
+# Enable bytecode compilation
+ENV UV_COMPILE_BYTECODE=1
 
-# Install the Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy from the cache instead of linking since it's a mounted volume
+ENV UV_LINK_MODE=copy
 
-# Copy the Flask application file into the container
-#COPY app.py .
-#EXPOSE 5000
+# Copy the project into the image
 
+# Sync the project into a new environment, asserting the lockfile is up to date
+WORKDIR /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project --no-dev
+
+COPY . /app
+
+# COPY app.py /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+  uv sync --frozen --no-dev &&\
+	uv pip install .
+
+# Place executables in the environment at the front of the path
+ENV PATH="/app/.venv/bin:$PATH"
 # Command to run the Flask application
 # Use gunicorn or similar for production; Flask's built-in server is for development.
-#CMD ["python", "app.py"]
+
+# CMD ["uv", "run", "python", "app.py"]

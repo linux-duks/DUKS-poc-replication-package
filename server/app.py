@@ -20,8 +20,9 @@ def get_commits():
     if request.method == "OPTIONS": # CORS preflight
         return _build_cors_preflight_response()
     elif request.method == "GET":
-        commits_df = pd.read_csv("../data/mock1.csv")
-        commits_df.sort_values('author_time', axis=0, ascending=True, inplace=True)
+        commits_df = pd.read_csv("../data/enhanced.csv", sep="|")
+        commits_df.sort_values('committer_date', axis=0, ascending=True, inplace=True)
+
         response = jsonify(commits_df.to_dict(orient='records'))
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
