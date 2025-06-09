@@ -1,5 +1,5 @@
 # Use a lightweight official Python image
-FROM python:3.12.10-slim
+FROM docker.io/python:3.12.10-slim
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
@@ -16,16 +16,11 @@ ENV UV_LINK_MODE=copy
 
 # Sync the project into a new environment, asserting the lockfile is up to date
 WORKDIR /app
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --locked --no-install-project --no-dev
 
 COPY . /app
 
 # COPY app.py /app
-RUN --mount=type=cache,target=/root/.cache/uv \
-  uv sync --frozen --no-dev &&\
+RUN uv sync --frozen --no-dev &&\
 	uv pip install .
 
 # Place executables in the environment at the front of the path

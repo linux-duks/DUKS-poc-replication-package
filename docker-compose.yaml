@@ -6,8 +6,8 @@ services:
       context: server/
       dockerfile: Dockerfile
     volumes:
-      - ./data/:/data
-      - ./server/:/app
+      - ./data/:/data:z
+      - ./server/:/app:z
     ports:
       - 5000:5000
     stdin_open: true

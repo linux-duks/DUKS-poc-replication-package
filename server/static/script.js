@@ -63,14 +63,14 @@ function sliding_window_diffs(commits, intervalLengthDays){
 function sliding_window_authors(commits, intervalLengthDays){
 
     let runningAuthors = {};
-    let runningCommiters = {};
+    let runningCommitters = {};
 
     let window_begin = 0;
     let window_end = 0;
 
     date_points = []
     num_authors = []
-    num_commiters = []
+    num_committers = []
 
     for(i = 0; i < commits.length; i+=1){
         
@@ -89,11 +89,11 @@ function sliding_window_authors(commits, intervalLengthDays){
                 runningAuthors[thisAuthor] = 1;
             }
 
-            const thisCommiter = commits[window_end]["committer"];
-            if (thisCommiter in runningCommiters){
-                runningCommiters[thisCommiter] = runningCommiters[thisCommiter] + 1;
+            const thisCommitter = commits[window_end]["committer"];
+            if (thisCommitter in runningCommitters){
+                runningCommitters[thisCommitter] = runningCommitters[thisCommitter] + 1;
             }else{
-                runningCommiters[thisCommiter] = 1
+                runningCommitters[thisCommitter] = 1
             }
         }
 
@@ -108,29 +108,26 @@ function sliding_window_authors(commits, intervalLengthDays){
                 runningAuthors[thisAuthor] = runningAuthors[thisAuthor] - 1;
             }
 
-            const thisCommiter = commits[window_begin]["committer"];
-            if (runningCommiters[thisCommiter] <= 1){
-                delete runningCommiters[thisCommiter]
+            const thisCommitter = commits[window_begin]["committer"];
+            if (runningCommitters[thisCommitter] <= 1){
+                delete runningCommitters[thisCommitter]
             }else{
-                runningCommiters[thisCommiter] = runningCommiters[thisCommiter] - 1;
+                runningCommitters[thisCommitter] = runningCommitters[thisCommitter] - 1;
             }
         }
 
         date_points.push(thisDate);
         num_authors.push(Object.keys(runningAuthors).length);
-        num_commiters.push(Object.keys(runningCommiters).length);
+        num_committers.push(Object.keys(runningCommitters).length);
     }
 
-    return [date_points, num_authors ,num_commiters]
+    return [date_points, num_authors ,num_committers]
 }
 
 function plot_thing(commits){
 
 
     WINDOW_RADIUS = 5
-
-	  // TODO: use extra attributions
-    commits = loadExtraAttributions(commits)
 
     const contribs_results = sliding_window_authors(commits,WINDOW_RADIUS)
     const diffs_results = sliding_window_diffs(commits,WINDOW_RADIUS)
@@ -147,12 +144,12 @@ function plot_thing(commits){
         name: 'Authors'
     };
 
-    var commitersTrace = {
+    var committersTrace = {
         x: contribs_results[0],
         y: contribs_results[2],
         type: 'lines',
         yaxis: 'y',
-        name: 'Commiters',
+        name: 'Committers',
     }
 
     var diffTrace = {
@@ -164,7 +161,7 @@ function plot_thing(commits){
     };
 
 
-    var data = [contributorsTrace,commitersTrace,diffTrace];
+    var data = [contributorsTrace,committersTrace,diffTrace];
 
     var layout = {
         title: 'Test plot with Contributor and Diff Data',
@@ -186,19 +183,6 @@ function plot_thing(commits){
 
     Plotly.newPlot('plotDiv', data, layout);
 
-}
-
-/**
- * Parses the 'attributions' field of every commit object of a list
- * into a json object.
- * @param {*} commits 
- * @returns commits
- */
-function loadExtraAttributions(commits){
-    for(commit of commits){
-        commit["attributions"] = JSON.parse(commit["attributions"]);
-    }
-    return commits
 }
 
 get_commits().then( (commits) => plot_thing(commits))
