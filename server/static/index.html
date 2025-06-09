@@ -1,14 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8" />    
     <title>Contributors Viz</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="static/script.js"></script>
+    <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
     <h1>Testing</h1>
 
-    <div id="plotDiv" style="width:1200px;height:800px;"></div>
+    <section class="flexRow">
+        <div id="plotDiv" style="width:60vw;height:80vh;"></div>
+        <div id="controls">
+            <div>
+                <input type="checkbox" name="checkAuthors" onchange="replotOnToggle(this)" checked />
+                <label for="checkAuthors"> Authors </label>
+            </div>
+            <div>
+                <input type="checkbox" name="checkCommiters" onchange="replotOnToggle(this)" checked />
+                <label for="checkCommiters"> Commiters </label>
+            </div>
+        </div>
+    </section>
+
 </body>
 </html>

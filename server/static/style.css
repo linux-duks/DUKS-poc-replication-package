@@ -1,0 +1,10 @@
+.flexRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+#controls{
+    width: 10vw;
+    background-color: pink;
+}

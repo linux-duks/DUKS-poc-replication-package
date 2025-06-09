@@ -276,5 +276,35 @@ function loadExtraAttributions(commits){
     return commits
 }
 
+const LEFTDATAPOINTS = ["Authors","Commiters"];
+
+/**
+ * Replots the graph once a given input is toggled.
+ * @param {*} toggledInputElem 
+ */
+function replotOnToggle(toggledInputElem){
+
+    const checked = toggledInputElem.checked;
+    const dataPoints = getBranchData();
+    const titleValue = toggledInputElem.name.slice(5).replace("_"," ");
+    console.log(titleValue);
+    
+
+    if(LEFTDATAPOINTS.includes(titleValue)){
+        if(checked){
+            dataPoints["leftDataPoints"].push(titleValue);
+            console.log("Addinfg")
+        }else{
+            dataPoints["leftDataPoints"].splice(dataPoints["leftDataPoints"].indexOf(titleValue),1);
+            console.log("Removing")
+        }
+    }else{
+        console.log("not in")
+    }
+
+    plot_thing()
+
+}
+
 
 get_commits().then( (commits) => {computeBranchData(commits);plot_thing();})
