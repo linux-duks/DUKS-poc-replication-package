@@ -19,7 +19,7 @@ def load_data():
     commits_df = commits_df.with_columns(
         [
             pl.col("attributions")
-            .map_elements(unique_extra_contributors)
+            .map_elements(unique_extra_contributors, return_dtype=pl.List(pl.String))
             .alias("extra_contributors")
         ]
     )
