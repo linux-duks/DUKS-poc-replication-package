@@ -1,8 +1,10 @@
 import logging
 import os
+import sys
 import re
 import csv
 from datetime import datetime, timedelta
+from collections import deque
 
 import orjson
 import grpc
@@ -10,10 +12,14 @@ import swh.graph.grpc.swhgraph_pb2 as swhgraph
 import swh.graph.grpc.swhgraph_pb2_grpc as swhgraph_grpc
 # from google.protobuf.field_mask_pb2 import FieldMask
 
+
 GRAPH_GRPC_SERVER = "0.0.0.0:50091"
 LIMIT = 0
-
-INITIAL_NODE = "swh:1:rev:4a2d78822fdf1556dfbbfaedd71182fe5b562194"
+PRE_LOAD_COMMITS_FROM = os.getenv("PRE_LOAD_COMMITS_FROM_STDIN", "false") != "false"
+# defaults to the last commit available in the swh exported graph
+INITIAL_NODE = os.getenv(
+    "INITIAL_NODE", "swh:1:rev:4a2d78822fdf1556dfbbfaedd71182fe5b562194"
+)
 
 DEBUG = os.getenv("DEBUG", "false")
 level = logging.INFO
@@ -25,6 +31,45 @@ logging.basicConfig(
     format="[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s",
     datefmt="%H:%M:%S",
 )
+
+
+# UniqueDeque is a queue with a HashSet to guarantee uniqueness in queued items
+class UniqueDeque:
+    def __init__(self, iterable=None):
+        self._deque = deque()
+        self._set = set()
+        if iterable:
+            for item in iterable:
+                self.append(item)
+
+    def append(self, item):
+        if item not in self._set:
+            self._deque.append(item)
+            self._set.add(item)
+
+    def appendleft(self, item):
+        if item not in self._set:
+            self._deque.appendleft(item)
+            self._set.add(item)
+
+    def pop(self):
+        item = self._deque.pop()
+        self._set.remove(item)
+        return item
+
+    def popleft(self):
+        item = self._deque.popleft()
+        self._set.remove(item)
+        return item
+
+    def __len__(self):
+        return len(self._deque)
+
+    def __iter__(self):
+        return iter(self._deque)
+
+    def __repr__(self):
+        return f"UniqueDeque({list(self._deque)})"
 
 
 def extract_attributions(commit_message) -> (list[dict], list[str]):
@@ -90,19 +135,47 @@ def extract_attributions(commit_message) -> (list[dict], list[str]):
 #     links = pattern.findall(commit_message)
 #     return links
 
-with grpc.insecure_channel(GRAPH_GRPC_SERVER) as channel:
-    stub = swhgraph_grpc.TraversalServiceStub(channel)
 
-    node_num = 0
-    visited = set()
-    queue = [INITIAL_NODE]
+def write_commit(writer: csv.writer, current_node_response):
+    attributions = extract_attributions(str(current_node_response.rev.message.decode()))
 
-    file = open("file.csv", "w", newline="", buffering=1, encoding="utf-8")
+    writer.writerow(
+        [
+            # commit sha1
+            current_node_response.swhid.lstrip("swh:1:rev:"),
+            # all successor ids
+            # orjson.dumps(
+            #     [
+            #         succ.swhid.lstrip("swh:1:rev")
+            #         for succ in current_node_response.successor
+            #         if succ.swhid.startswith("swh:1:rev")
+            #     ]
+            # ).decode(),  # parents
+            (
+                datetime.utcfromtimestamp(current_node_response.rev.committer_date)
+                + timedelta(minutes=current_node_response.rev.committer_date_offset)
+            ).strftime("%Y-%m-%dT%H:%M:%S"),  # committer_date
+            (
+                datetime.utcfromtimestamp(current_node_response.rev.author_date)
+                + timedelta(minutes=current_node_response.rev.author_date_offset)
+            ).strftime("%Y-%m-%dT%H:%M:%S"),  # author_date
+            orjson.dumps(
+                attributions
+            ).decode(),  # attributions: dict with authors, acks, reviews...
+            # diffs when available in the graph
+            # 0,
+            # 0,
+        ]
+    )
+
+
+def main():
+    file = open("../data/file.csv", "w", newline="", buffering=1, encoding="utf-8")
     writer = csv.writer(file, delimiter="|", quoting=csv.QUOTE_ALL, lineterminator="\n")
     writer.writerow(
         [
             "commit",
-            "parents",
+            # "parents",
             "committer_date",
             "author_date",
             "attributions",
@@ -111,69 +184,76 @@ with grpc.insecure_channel(GRAPH_GRPC_SERVER) as channel:
         ]
     )
 
-    logging.info(f"Preparing with {queue}")
-    while True:
-        try:
-            next_node = queue.pop(0)
-            logging.info(f"Visiting {next_node}")
-            response = stub.GetNode(
-                swhgraph.GetNodeRequest(
-                    swhid=next_node,
-                    # mask=FieldMask(paths=["swhid", "rev.message", "rev.author"]),
-                )
-            )
-            node_num += 1
-            visited.add(next_node)
+    node_num = 0
+    visited = set()
+    queue = UniqueDeque([INITIAL_NODE])
 
-            local_successors = []
-            for succ in response.successor:
-                succ_swhid = succ.swhid
-                # filter only revisions
-                if succ_swhid.startswith("swh:1:rev") and succ_swhid not in visited:
-                    queue.append(succ_swhid)
-                    local_successors.append(succ_swhid.lstrip("swh:1:rev"))
-                # else:
-                #     print("READING NODE", succ)
-                #     dir_response = stub.GetNode(
-                #         swhgraph.GetNodeRequest(
-                #             swhid=succ_swhid,
-                #             # mask=FieldMask(paths=["swhid", "rev.message", "rev.author"]),
-                #         )
-                #     )
-                #     print(dir_response)
+    # can be used with :
+    # $ tail -n +2 file.csv | awk -F'|' '{print $1}' | PRE_LOAD_COMMITS_FROM_STDIN=true uv run python grpc_script.py
+    # skip the header line  | print only the first column
 
-            attributions = extract_attributions(str(response.rev.message.decode()))
-            # TODO: on an non-anonimized graph, retrive the authors correctly
-            if len(attributions) < 2:
-                attributions.append({"type": "author", "name": response.rev.author})
-                attributions.append(
-                    {"type": "committer", "name": response.rev.committer}
-                )
+    if PRE_LOAD_COMMITS_FROM:
+        logging.info("Reading existing visited nodes")
+        last_node = None
+        for line in sys.stdin:
+            last_node = "swh:1:rev:{}".format(line.strip().strip('"'))
+            visited.add(last_node)
+        logging.info(f"LastNode read from stdin: {last_node}")
+        queue = UniqueDeque([last_node])
 
-            writer.writerow(
-                [
-                    response.swhid.lstrip("swh:1:rev:"),  # commit sha1
-                    orjson.dumps(local_successors).decode(),  # parents
-                    (
-                        datetime.utcfromtimestamp(response.rev.committer_date)
-                        + timedelta(minutes=response.rev.committer_date_offset)
-                    ).strftime("%Y-%m-%dT%H:%M:%S"),  # committer_date
-                    (
-                        datetime.utcfromtimestamp(response.rev.author_date)
-                        + timedelta(minutes=response.rev.author_date_offset)
-                    ).strftime("%Y-%m-%dT%H:%M:%S"),  # author_date
-                    orjson.dumps(
-                        attributions
-                    ).decode(),  # attributions: dict with authors, acks, reviews...
-                    # 0,
-                    # 0,
-                ]
-            )
-            logging.debug(response)
-        except Exception as e:
-            logging.error(e)
-            break
+    with grpc.insecure_channel(GRAPH_GRPC_SERVER) as channel:
+        stub = swhgraph_grpc.TraversalServiceStub(channel)
 
-        if node_num > LIMIT and LIMIT > 0:
-            break
+        logging.info(f"Preparing BFS with {queue}")
+        while queue:
+            try:
+                current_node = queue.popleft()
+                logging.debug(f"Popped {current_node}")
+
+                if current_node not in visited:
+                    visited.add(current_node)
+                    logging.info(f"Visiting {current_node}")
+
+                    # GetNode details from graph
+                    current_node_response = stub.GetNode(
+                        swhgraph.GetNodeRequest(
+                            swhid=current_node,
+                            # mask=FieldMask(paths=["swhid", "rev.message", "rev.author"]),
+                        )
+                    )
+
+                    # logging.debug(f"Current node response: {current_node_response}")
+                    node_num += 1
+
+                    for succ in current_node_response.successor:
+                        logging.debug(f"successor: {succ}")
+                        # filter only revisions
+                        if (
+                            succ.swhid.startswith("swh:1:rev")
+                            and succ.swhid not in visited
+                        ):
+                            queue.append(succ.swhid)
+                        # else:
+                        #     print("READING NODE", succ)
+                        #     dir_current_node_response = stub.GetNode(
+                        #         swhgraph.GetNodeRequest(
+                        #             swhid=succ_swhid,
+                        #             # mask=FieldMask(paths=["swhid", "rev.message", "rev.author"]),
+                        #         )
+                        #     )
+                        #     print(dir_current_node_response)
+
+                    # add current commit to writer
+                    write_commit(writer, current_node_response)
+
+            except Exception as e:
+                logging.error(e)
+                break
+
+            if node_num > LIMIT and LIMIT > 0:
+                break
     file.close()
+
+
+if __name__ == "__main__":
+    main()
