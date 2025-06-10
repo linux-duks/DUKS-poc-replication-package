@@ -19,17 +19,19 @@ async function get_tags(){
  * Computes the sum of the LoC differences for a sliding window.
  * @param {*} commits 
  * @param {number} intervalLengthDays 
- * @returns [commit_dates, summed_pos_diffs, summed_neg_diffs, summed_total_diffs]
+ * @returns [commit_dates, summed_pos_diffs, summed_neg_diffs, net_diff, summed_total_diffs, tag_dates]
  */
 function slidingWindowDiffs(commits, intervalLengthDays){
 
-    let running_minus = commits[0]["deletions"];
-    let running_plus = commits[0]["insertions"];
-    let running_acc = commits[0]["insertions"] - commits[0]["deletions"];
-    let running_changes = commits[0]["insertions"] + commits[0]["deletions"]
+    let running_minus = 0;
+    let running_plus = 0;
+    let running_acc = 0;
+    let running_changes = 0;
+    
+    let tag_dates = [];
 
     let window_begin = 0;
-    let window_end = 0;
+    let window_end = -1;
 
     date_points = []
     plus_points = []
@@ -42,6 +44,10 @@ function slidingWindowDiffs(commits, intervalLengthDays){
         let thisDate = new Date(commits[i]["committer_date"])
         const maxDate = new Date(thisDate).setDate(thisDate.getDate() + intervalLengthDays);
         const minDate = new Date(thisDate).setDate(thisDate.getDate() - intervalLengthDays);
+
+        if(commits[i]["tag"].length > 0){
+            tag_dates.push([thisDate,commits[i]["tag"]])
+        }
 
         // First, update the datetime window. Starting with the last commit of the window
         while(window_end < commits.length - 1 && maxDate >= new Date(commits[window_end+1]["committer_date"])){
@@ -72,7 +78,7 @@ function slidingWindowDiffs(commits, intervalLengthDays){
         modification_points.push(running_changes);
     }
 
-    return [date_points, plus_points, minus_points, acc_points,modification_points]
+    return [date_points, plus_points, minus_points, acc_points,modification_points,tag_dates]
 }
 
 function slidingWindowAuthors(commits, intervalLengthDays){
@@ -188,6 +194,8 @@ var branchData = {
     'chosenData' : [], // keys from 'allData dict'
     'allData': [], // dict{'<title>' : dict {'axisLabel': '', 'data': [] } } 
     'commitDates': [], // xAxis for all traces
+    'tags' : [],
+    'showTags' : false,
 }
 
 function setBranchData(newBranchData){
@@ -208,13 +216,14 @@ function computeBranchData(commitList){
 
     WINDOW_RADIUS = 10
 
-	  // TODO: use extra attributions
     commits = loadExtraAttributions(commitList)
 
     const contribs_results = slidingWindowAuthors(commits,WINDOW_RADIUS)
     const diffs_results = slidingWindowDiffs(commits,WINDOW_RADIUS)
 
     const dates = contribs_results[0];
+    const tags = diffs_results[5];
+
     const attribData = contribs_results[3];
     const allData = {
         'Authors' : {'axisLabel': 'Contributors', 'data': contribs_results[1]},
@@ -230,7 +239,9 @@ function computeBranchData(commitList){
         'leftDataPoints': ['Authors','Commiters'],
         'rightDataPoints':  ['LoC Net'],
         'allData': allData,
-        'commitDates': dates
+        'commitDates': dates,
+        'tags' : tags,
+        'showTags' : false,
     };
 
     setBranchData(newBranchData);
@@ -269,10 +280,47 @@ function plot_figure(){
         rightAxisLabel = branchData['allData'][rightKey]['axisLabel'];
     }
 
+    const tagShapes = []
+    const tagLabels = []
+
+    if(branchData["showTags"]){
+        for(datedTag of branchData["tags"]){
+            const tagDate = datedTag[0];
+            
+            const newShape = {
+                type: 'line',
+                x0: tagDate,
+                x1: tagDate,
+                y0: 0,
+                y1: 1,
+                xref: 'x',
+                yref: 'paper',
+                line: {color: 'red', width: 2, dash: 'dot' }
+            };
+
+            const newLabel = {
+                type: 'line',
+                x: tagDate,
+                y: 1.05,
+                xref: 'x',
+                yref: 'paper',
+                text: datedTag[1],
+                showarrow: false,
+                xanchor: 'center',
+                yanchor: 'bottom',
+                line: {color: 'red', width: 2, dash: 'dot' }
+            }
+
+            tagShapes.push(newShape);
+            tagLabels.push(newLabel);
+        }
+    }
+
     var layout = {
         title: 'Test plot with Contributor and Diff Data',
         xaxis: {
-            title: 'Date'
+            title: 'Date',
+            type: 'date'
         },
         yaxis: {
             title: leftAxisLabel
@@ -283,15 +331,14 @@ function plot_figure(){
             side: 'right',
             anchor: 'x',
             showgrid: false,
-        }
+        },
+        shapes: tagShapes,
+        annotations: tagLabels
     };
-
 
     Plotly.newPlot('plotDiv', data, layout);
 
 }
-
-get_commits().then( (commits) => plot_thing(commits))
 
 /**
  * map_tags loads the tag list and returns a HashMap of TAG to COMMIT
@@ -321,7 +368,6 @@ function loadExtraAttributions(commits){
     }
     return commits
 }
-
 const LEFTDATAPOINTS = ["Authors","Commiters","Reviewed Bys"];
 
 /**
@@ -333,6 +379,12 @@ function replotOnToggle(toggledInputElem){
     const checked = toggledInputElem.checked;
     const dataPoints = getBranchData();
     const titleValue = toggledInputElem.name.slice(5).replace("_"," ");  
+
+    if(titleValue === "Tags"){
+        dataPoints["showTags"] = checked;
+        plot_figure()
+        return
+    }
 
     if(LEFTDATAPOINTS.includes(titleValue)){
         if(checked){
