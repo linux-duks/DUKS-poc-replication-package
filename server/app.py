@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify, make_response
-import orjson
 from data_loader import load_data, load_tags
 
+import orjson
+import os
+import logging
 app = Flask(__name__)
 
 
@@ -23,7 +25,12 @@ def get_commits():
     if request.method == "OPTIONS":  # CORS preflight
         return _build_cors_preflight_response()
     elif request.method == "GET":
-        data = load_data()
+        # date_window_size with 2w by default
+        window_size = request.args.get("window_size", "2w")
+
+        app.logger.info("GET commits with window: %s", window_size)
+
+        data = load_data(window_date_size=window_size)
         response = jsonify(data.to_dicts())
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
