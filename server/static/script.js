@@ -79,9 +79,10 @@ function slidingWindowAuthors(commits, intervalLengthDays){
 
     let runningAuthors = {};
     let runningCommitters = {};
+    let runningAttributions = {};
 
     let window_begin = 0;
-    let window_end = 0;
+    let window_end = -1;
 
     date_points = []
     num_authors = []
@@ -110,6 +111,27 @@ function slidingWindowAuthors(commits, intervalLengthDays){
             }else{
                 runningCommitters[thisCommitter] = 1
             }
+
+            const thisAttributions = commits[window_end]["attributions"];
+            for(attribution of thisAttributions){
+                const attrType = attribution["type"].toLowerCase();
+                const attrEmail = attribution["email"];
+
+                if(attrType in runningAttributions){
+                    if(attrEmail in runningAttributions[attrType]['runningAuthors']){
+                        runningAttributions[attrType]['runningAuthors'][attrEmail]+= 1;
+                    }else{
+                        runningAttributions[attrType]['runningAuthors'][attrEmail] = 1;
+                    }
+                }else{
+                    const newRunningAuthors = {}
+                    newRunningAuthors[attrEmail] = 1
+                    runningAttributions[attrType] = {
+                        'runningCount' : Array(i).fill(0),
+                        'runningAuthors' : newRunningAuthors
+                    }
+                }
+            }
         }
 
         //Update window beginning
@@ -129,14 +151,30 @@ function slidingWindowAuthors(commits, intervalLengthDays){
             }else{
                 runningCommitters[thisCommitter] = runningCommitters[thisCommitter] - 1;
             }
+
+            const thisAttributions = commits[window_begin]["attributions"];
+            for(attribution of thisAttributions){
+                const attrType = attribution["type"].toLowerCase();
+                const attrEmail = attribution["email"];
+                if(runningAttributions[attrType]['runningAuthors'][attrEmail] <= 1){
+                    delete runningAttributions[attrType]['runningAuthors'][attrEmail]
+                }else{
+                    runningAttributions[attrType]['runningAuthors'][attrEmail] -= 1;
+                }
+            }
         }
 
         date_points.push(thisDate);
         num_authors.push(Object.keys(runningAuthors).length);
         num_committers.push(Object.keys(runningCommitters).length);
+        
+        for(attrTypeDict of Object.values(runningAttributions)){
+            attrTypeDict['runningCount'].push(Object.keys(attrTypeDict['runningAuthors']).length)
+        }
+
     }
 
-    return [date_points, num_authors ,num_committers]
+    return [date_points, num_authors ,num_committers, runningAttributions]
 }
 
 // -----------------------------------------------------------------------------------
@@ -177,9 +215,11 @@ function computeBranchData(commitList){
     const diffs_results = slidingWindowDiffs(commits,WINDOW_RADIUS)
 
     const dates = contribs_results[0];
+    const attribData = contribs_results[3];
     const allData = {
         'Authors' : {'axisLabel': 'Contributors', 'data': contribs_results[1]},
         'Commiters' : {'axisLabel': 'Contributors', 'data': contribs_results[2]},
+        'Reviewed Bys' : {'axisLabel': 'Contributors', 'data': attribData["reviewed-by"]["runningCount"]},
         'LoC Added' : {'axisLabel': 'LoC', 'data': diffs_results[1]},
         'LoC Removed' : {'axisLabel': 'LoC', 'data': diffs_results[2]},
         'LoC Net' : {'axisLabel': 'LoC', 'data': diffs_results[3]},
@@ -196,7 +236,7 @@ function computeBranchData(commitList){
     setBranchData(newBranchData);
 }
 
-function plot_thing(){
+function plot_figure(){
 
     const branchData = getBranchData()
 
@@ -282,7 +322,7 @@ function loadExtraAttributions(commits){
     return commits
 }
 
-const LEFTDATAPOINTS = ["Authors","Commiters"];
+const LEFTDATAPOINTS = ["Authors","Commiters","Reviewed Bys"];
 
 /**
  * Replots the graph once a given input is toggled.
@@ -308,9 +348,9 @@ function replotOnToggle(toggledInputElem){
         }
     }
 
-    plot_thing()
+    plot_figure()
 
 }
 
 
-get_commits().then( (commits) => {computeBranchData(commits);plot_thing();})
+get_commits().then( (commits) => {computeBranchData(commits);plot_figure();})
