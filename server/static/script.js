@@ -64,7 +64,7 @@ function slidingWindowDiffs(commits, intervalLengthDays){
         date_points.push(thisDate);
         plus_points.push(running_plus);
         minus_points.push(running_minus);
-        acc_points.push(Math.abs(running_acc));
+        acc_points.push(running_acc);//Math.abs(running_acc));
     }
 
     return [date_points, plus_points, minus_points, acc_points]
@@ -286,20 +286,20 @@ function replotOnToggle(toggledInputElem){
 
     const checked = toggledInputElem.checked;
     const dataPoints = getBranchData();
-    const titleValue = toggledInputElem.name.slice(5).replace("_"," ");
-    console.log(titleValue);
-    
+    const titleValue = toggledInputElem.name.slice(5).replace("_"," ");  
 
     if(LEFTDATAPOINTS.includes(titleValue)){
         if(checked){
             dataPoints["leftDataPoints"].push(titleValue);
-            console.log("Addinfg")
         }else{
             dataPoints["leftDataPoints"].splice(dataPoints["leftDataPoints"].indexOf(titleValue),1);
-            console.log("Removing")
         }
     }else{
-        console.log("not in")
+        if(checked){
+            dataPoints["rightDataPoints"].push(titleValue);
+        }else{
+            dataPoints["rightDataPoints"].splice(dataPoints["rightDataPoints"].indexOf(titleValue),1);
+        }
     }
 
     plot_thing()
