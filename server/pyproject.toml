@@ -10,7 +10,6 @@ requires-python = ">=3.12"
 dependencies = [
     "flask>=3.1.1",
     "orjson>=3.10.18",
-    "pandas>=2.3.0",
     "polars>=1.30.0",
 ]
 

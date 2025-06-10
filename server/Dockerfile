@@ -17,11 +17,15 @@ ENV UV_LINK_MODE=copy
 # Sync the project into a new environment, asserting the lockfile is up to date
 WORKDIR /app
 
-COPY . /app
+COPY pyproject.toml pyproject.toml
+COPY uv.lock uv.lock
+
 
 # COPY app.py /app
 RUN uv sync --frozen --no-dev &&\
 	uv pip install .
+
+COPY . /app
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
