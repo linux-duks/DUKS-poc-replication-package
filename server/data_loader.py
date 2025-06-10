@@ -36,9 +36,22 @@ def load_data():
     return commits_df.collect()
 
 
+def load_tags():
+    df = pl.read_csv(
+        "../data/tags.csv",
+        separator="|",
+    )
+
+    # TODO: change order ?
+    # commits_df = commits_df.sort(
+    #     "tag", descending=False, maintain_order=True
+    # )
+
+    return df
+
+
 # main used only to test locally, executing this script directly
 if __name__ == "__main__":
-
     print()
     data = load_data()
     print(data.head())

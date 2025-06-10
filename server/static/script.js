@@ -5,6 +5,12 @@ async function get_commits(){
     return json_commits
 }
 
+async function get_tags(){
+    result = await fetch("tags")
+    json_tags = await result.json()
+    
+    return json_tags
+}
 /**
  * Computes the sum of the LoC differences for a sliding window.
  * @param {*} commits 
@@ -186,3 +192,19 @@ function plot_thing(commits){
 }
 
 get_commits().then( (commits) => plot_thing(commits))
+
+/**
+ * map_tags loads the tag list and returns a HashMap of TAG to COMMIT
+ * returns the map and the array
+ * @param {Array.<{tag: String, commit: String}>} tags
+ * @returns [{Object.<String, String>}, {Array.<{tag: String, commit: String}>}]
+ */
+function map_tags(tags){
+	var mappedTags = tags.reduce(function(map, obj) {
+			map[obj.tag] = obj.commit;
+			return map;
+	}, {});
+	return mappedTags, tags
+}
+// WIP
+get_tags().then( (tags) => map_tags(tags))

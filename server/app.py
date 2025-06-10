@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, make_response
 import orjson
-from data_loader import load_data
+from data_loader import load_data, load_tags
 
 app = Flask(__name__)
 
@@ -24,6 +24,26 @@ def get_commits():
         return _build_cors_preflight_response()
     elif request.method == "GET":
         data = load_data()
+        response = jsonify(data.to_dicts())
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response
+    else:
+        raise RuntimeError(
+            "Couldn't address request with HTTP method {}".format(request.method)
+        )
+
+
+@app.route("/tags", methods=["GET"])
+def get_tags():
+    """
+    Endpoint to serve the mock Git commit data.
+    """
+    # Convert DataFrame to a list of dictionaries (records)
+    # This is a common way to serialize DataFrames for JSON API responses.
+    if request.method == "OPTIONS":  # CORS preflight
+        return _build_cors_preflight_response()
+    elif request.method == "GET":
+        data = load_tags()
         response = jsonify(data.to_dicts())
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
