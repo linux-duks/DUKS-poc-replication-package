@@ -26,6 +26,7 @@ function slidingWindowDiffs(commits, intervalLengthDays){
     let running_minus = commits[0]["deletions"];
     let running_plus = commits[0]["insertions"];
     let running_acc = commits[0]["insertions"] - commits[0]["deletions"];
+    let running_changes = commits[0]["insertions"] + commits[0]["deletions"]
 
     let window_begin = 0;
     let window_end = 0;
@@ -34,6 +35,7 @@ function slidingWindowDiffs(commits, intervalLengthDays){
     plus_points = []
     minus_points = []
     acc_points = []
+    modification_points = []
 
     for(i = 0; i < commits.length; i+=1){
         
@@ -49,6 +51,7 @@ function slidingWindowDiffs(commits, intervalLengthDays){
             running_plus += new_plus
             running_minus += new_minus
             running_acc += new_plus - new_minus
+            running_changes += new_plus + new_minus
         }
 
         //Update window beginning
@@ -59,15 +62,17 @@ function slidingWindowDiffs(commits, intervalLengthDays){
             running_plus -= old_plus
             running_minus -= old_minus
             running_acc -= old_plus - old_minus
+            running_changes -= old_plus + old_minus
         }
 
         date_points.push(thisDate);
         plus_points.push(running_plus);
         minus_points.push(running_minus);
         acc_points.push(running_acc);//Math.abs(running_acc));
+        modification_points.push(running_changes);
     }
 
-    return [date_points, plus_points, minus_points, acc_points]
+    return [date_points, plus_points, minus_points, acc_points,modification_points]
 }
 
 function slidingWindowAuthors(commits, intervalLengthDays){
@@ -177,12 +182,13 @@ function computeBranchData(commitList){
         'Commiters' : {'axisLabel': 'Contributors', 'data': contribs_results[2]},
         'LoC Added' : {'axisLabel': 'LoC', 'data': diffs_results[1]},
         'LoC Removed' : {'axisLabel': 'LoC', 'data': diffs_results[2]},
-        'LoC Changes' : {'axisLabel': 'LoC', 'data': diffs_results[3]},
+        'LoC Net' : {'axisLabel': 'LoC', 'data': diffs_results[3]},
+        'LoC Changes' :  {'axisLabel': 'LoC', 'data': diffs_results[4]},
     }
 
     const newBranchData = {
         'leftDataPoints': ['Authors','Commiters'],
-        'rightDataPoints':  ['LoC Changes'],
+        'rightDataPoints':  ['LoC Net'],
         'allData': allData,
         'commitDates': dates
     };
