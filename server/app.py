@@ -1,6 +1,14 @@
 from flask import Flask, request, jsonify, make_response
-import orjson
 from data_loader import load_data, load_tags
+
+import orjson
+import os
+import logging
+
+DEBUG = os.getenv("DEBUG", "false")
+level = logging.INFO
+if DEBUG != "false":
+    level = logging.DEBUG
 
 app = Flask(__name__)
 
@@ -23,7 +31,12 @@ def get_commits():
     if request.method == "OPTIONS":  # CORS preflight
         return _build_cors_preflight_response()
     elif request.method == "GET":
-        data = load_data()
+        # date_window_size with 2w by default
+        window_size = request.args.get("window_size", "2w")
+
+        app.logger.info("GET commits with window: %s", window_size)
+
+        data = load_data(window_date_size=window_size)
         response = jsonify(data.to_dicts())
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
@@ -81,4 +94,4 @@ if __name__ == "__main__":
     app.json_encoder = ORJSONEncoder
     app.json_decoder = ORJSONDecoder
     # Use 0.0.0.0 to make the server accessible from outside the container
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=DEBUG)
