@@ -15,6 +15,8 @@ async function get_tags(){
 // Computing Sliding Window Data
 // -----------------------------------------------------------------------------------
 
+const DATESAMPLINGINTERVAL = 1//In days, used for plots
+
 /**
  * Computes the sum of the LoC differences for a sliding window.
  * @param {*} commits 
@@ -22,6 +24,9 @@ async function get_tags(){
  * @returns [commit_dates, summed_pos_diffs, summed_neg_diffs, net_diff, summed_total_diffs, tag_dates]
  */
 function slidingWindowDiffs(commits, intervalLengthDays){
+
+    const FIRSTCOMMITDATE = new Date(commits[0]["committer_date"]);
+    const LASTCOMMITDATE = new Date(commits[commits.length-1]["committer_date"]);
 
     let running_minus = 0;
     let running_plus = 0;
@@ -39,15 +44,11 @@ function slidingWindowDiffs(commits, intervalLengthDays){
     acc_points = []
     modification_points = []
 
-    for(i = 0; i < commits.length; i+=1){
+    let thisDate = FIRSTCOMMITDATE;
+    while(thisDate < LASTCOMMITDATE){
         
-        let thisDate = new Date(commits[i]["committer_date"])
         const maxDate = new Date(thisDate).setDate(thisDate.getDate() + intervalLengthDays);
         const minDate = new Date(thisDate).setDate(thisDate.getDate() - intervalLengthDays);
-
-        if(commits[i]["tag"].length > 0){
-            tag_dates.push([thisDate,commits[i]["tag"]])
-        }
 
         // First, update the datetime window. Starting with the last commit of the window
         while(window_end < commits.length - 1 && maxDate >= new Date(commits[window_end+1]["committer_date"])){
@@ -58,6 +59,10 @@ function slidingWindowDiffs(commits, intervalLengthDays){
             running_minus += new_minus
             running_acc += new_plus - new_minus
             running_changes += new_plus + new_minus
+
+            if(commits[window_end]["tag"].length > 0){
+                tag_dates.push([new Date(commits[window_end]["committer_date"]),commits[window_end]["tag"]])
+            }
         }
 
         //Update window beginning
@@ -76,12 +81,18 @@ function slidingWindowDiffs(commits, intervalLengthDays){
         minus_points.push(running_minus);
         acc_points.push(running_acc);//Math.abs(running_acc));
         modification_points.push(running_changes);
+
+        thisDate.setDate(thisDate.getDate()+DATESAMPLINGINTERVAL);
+
     }
 
     return [date_points, plus_points, minus_points, acc_points,modification_points,tag_dates]
 }
 
 function slidingWindowAuthors(commits, intervalLengthDays){
+
+    const FIRSTCOMMITDATE = new Date(commits[0]["committer_date"]);
+    const LASTCOMMITDATE = new Date(commits[commits.length-1]["committer_date"]);
 
     let runningAuthors = {};
     let runningCommitters = {};
@@ -94,9 +105,10 @@ function slidingWindowAuthors(commits, intervalLengthDays){
     num_authors = []
     num_committers = []
 
-    for(i = 0; i < commits.length; i+=1){
+    let noCommits = 0
+    let thisDate = FIRSTCOMMITDATE;
+    while(thisDate < LASTCOMMITDATE){
         
-        let thisDate = new Date(commits[i]["committer_date"])
         const maxDate = new Date(thisDate).setDate(thisDate.getDate() + intervalLengthDays);
         const minDate = new Date(thisDate).setDate(thisDate.getDate() - intervalLengthDays);
 
@@ -133,11 +145,13 @@ function slidingWindowAuthors(commits, intervalLengthDays){
                     const newRunningAuthors = {}
                     newRunningAuthors[attrEmail] = 1
                     runningAttributions[attrType] = {
-                        'runningCount' : Array(i).fill(0),
+                        'runningCount' : Array(noCommits).fill(0),
                         'runningAuthors' : newRunningAuthors
                     }
                 }
             }
+
+            noCommits+=1
         }
 
         //Update window beginning
@@ -170,13 +184,15 @@ function slidingWindowAuthors(commits, intervalLengthDays){
             }
         }
 
-        date_points.push(thisDate);
+        date_points.push(new Date(thisDate));
         num_authors.push(Object.keys(runningAuthors).length);
         num_committers.push(Object.keys(runningCommitters).length);
         
         for(attrTypeDict of Object.values(runningAttributions)){
             attrTypeDict['runningCount'].push(Object.keys(attrTypeDict['runningAuthors']).length)
         }
+
+        thisDate.setDate(thisDate.getDate()+DATESAMPLINGINTERVAL);
 
     }
 
