@@ -4,6 +4,12 @@ from data_loader import load_data, load_tags
 import orjson
 import os
 import logging
+
+DEBUG = os.getenv("DEBUG", "false")
+level = logging.INFO
+if DEBUG != "false":
+    level = logging.DEBUG
+
 app = Flask(__name__)
 
 
@@ -88,4 +94,4 @@ if __name__ == "__main__":
     app.json_encoder = ORJSONEncoder
     app.json_decoder = ORJSONDecoder
     # Use 0.0.0.0 to make the server accessible from outside the container
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=DEBUG)
