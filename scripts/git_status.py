@@ -1,9 +1,12 @@
 import logging
-from pygit2 import Repository
+import subprocess
 import csv
 from io import StringIO
 import orjson
 import os
+import re
+
+from pygit2 import Repository
 
 DEBUG = os.getenv("DEBUG", "false")
 level = logging.INFO
@@ -32,6 +35,49 @@ def fix_attributions(attributions, author, committer):
     return orjson.dumps(new_attrs_block).decode()
 
 
+def read_tags(repo: Repository) -> list[[str]]:
+    tags_result = subprocess.run(
+        ["git", "show-ref", "--tags", "-d"],
+        cwd=repo.workdir,
+        capture_output=True,
+        text=True,
+    )
+    if tags_result.returncode != 0:
+        logging.error(tags_result.stderr)
+        return
+    tags = tags_result.stdout.strip().split("\n")
+    tags.reverse()
+    tag_list = []
+
+    # the desired tags are in this format: v6.9^{}"
+    regex = re.compile(r"v(\d+(?:\.\d+)*)\^{}")
+
+    for tag_line in tags:
+        sha, tag = tag_line.split(" ")
+        tag_version = ""
+
+        # ignore release candidate tags
+        if "-rc" not in tag:
+            match = regex.search(tag)
+            if match:
+                tag_version = match.group(1)
+                tag_list.append([tag_version, sha])
+
+    return tag_list
+
+
+def write_tags_file(tags: list[[str]]):
+    tags_file = open("../data/tags.csv", "w", newline="", buffering=1, encoding="utf-8")
+    tags_writer = csv.writer(
+        tags_file, delimiter="|", quoting=csv.QUOTE_ALL, lineterminator="\n"
+    )
+
+    tags_writer.writerow(["tag", "commit"])
+
+    for tag_line in tags:
+        tags_writer.writerow(tag_line)
+
+
 def run(kernel_path: str):
     INITIAL_COMMIT = "4a2d78822fdf1556dfbbfaedd71182fe5b562194"
 
@@ -55,8 +101,17 @@ def run(kernel_path: str):
             "author",
             "committer",
             "attributions",
+            "tag",
         ]
     )
+
+    # read all tags from repo
+    tags = read_tags(repo)
+    # write a tag:commit csv file
+    write_tags_file(tags)
+
+    # map commit:tag for reverse lookup
+    tag_map = {tagl[1]: tagl[0] for tagl in tags}
 
     for row in reader:
         commit = repo.get(row["commit"])
@@ -88,11 +143,13 @@ def run(kernel_path: str):
                     fix_attributions(
                         row["attributions"], commit.author, commit.committer
                     ),
+                    tag_map.get(row["commit"]),
                 ]
             )
 
     file.close()
 
 
-kernel_path = os.getenv("KERNEL_PATH", ".")
-run(kernel_path)
+if __name__ == "__main__":
+    kernel_path = os.getenv("KERNEL_PATH", ".")
+    run(kernel_path)
