@@ -47,7 +47,7 @@ function slidingWindowDiffs(commits, intervalLengthDays){
     let thisDate = FIRSTCOMMITDATE;
     while(thisDate < LASTCOMMITDATE){
         
-        const maxDate = new Date(thisDate).setDate(thisDate.getDate() + intervalLengthDays);
+        const maxDate = new Date(thisDate).setDate(thisDate.getDate() + 1);
         const minDate = new Date(thisDate).setDate(thisDate.getDate() - intervalLengthDays);
 
         // First, update the datetime window. Starting with the last commit of the window
@@ -109,7 +109,7 @@ function slidingWindowAuthors(commits, intervalLengthDays){
     let thisDate = FIRSTCOMMITDATE;
     while(thisDate < LASTCOMMITDATE){
         
-        const maxDate = new Date(thisDate).setDate(thisDate.getDate() + intervalLengthDays);
+        const maxDate = new Date(thisDate).setDate(thisDate.getDate() + 1);
         const minDate = new Date(thisDate).setDate(thisDate.getDate() - intervalLengthDays);
 
         // First, update the datetime window. Starting with the last commit of the window
@@ -230,7 +230,7 @@ function getBranchData(){
  */
 function computeBranchData(commitList){
 
-    WINDOW_RADIUS = 10
+    WINDOW_RADIUS = 20
 
     commits = loadExtraAttributions(commitList)
 
@@ -333,7 +333,6 @@ function plot_figure(){
     }
 
     var layout = {
-        title: 'Test plot with Contributor and Diff Data',
         xaxis: {
             title: 'Date',
             type: 'date'
@@ -404,12 +403,18 @@ function replotOnToggle(toggledInputElem){
 
     if(LEFTDATAPOINTS.includes(titleValue)){
         if(checked){
+            if(dataPoints["leftDataPoints"].includes(titleValue)){
+                return;
+            }
             dataPoints["leftDataPoints"].push(titleValue);
         }else{
             dataPoints["leftDataPoints"].splice(dataPoints["leftDataPoints"].indexOf(titleValue),1);
         }
     }else{
         if(checked){
+            if(dataPoints["rightDataPoints"].includes(titleValue)){
+                return;
+            }
             dataPoints["rightDataPoints"].push(titleValue);
         }else{
             dataPoints["rightDataPoints"].splice(dataPoints["rightDataPoints"].indexOf(titleValue),1);
@@ -420,5 +425,15 @@ function replotOnToggle(toggledInputElem){
 
 }
 
+function toggleCustomRatio(){
+    const checked = document.getElementById("checkCustom").checked
+    const ratioDiv = document.getElementById("customRatioArea")
+
+    if(checked){
+        ratioDiv.style.display = "block";
+    }else{
+        ratioDiv.style.display = "none";
+    }
+}
 
 get_commits().then( (commits) => {computeBranchData(commits);plot_figure();})
