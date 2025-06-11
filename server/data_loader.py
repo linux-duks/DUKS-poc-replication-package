@@ -87,12 +87,20 @@ def load_data(window_date_size=None):
         .unique(),
     )
 
-    # attributions were aggregated by combining list of strings. Parse their jsons here, and merge into a single json
     df = df.with_columns(
         [
+            # attributions were aggregated by combining list of strings. Parse their jsons here, and merge into a single json
             pl.col("attributions")
             .map_elements(merge_aggregated_attributions, return_dtype=pl.String)
-            .alias("attributions")
+            .alias("attributions"),
+            #
+            # coalease tags into a space separated string, or null
+            pl.col("tag")
+            .map_elements(
+                lambda tags: None if len or len(tags) < 1 else " ".join(tags),
+                return_dtype=pl.String,
+            )
+            .alias("tag"),
         ]
     )
 
