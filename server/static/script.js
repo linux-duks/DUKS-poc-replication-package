@@ -314,7 +314,7 @@ function plot_figure(){
                 y1: 1,
                 xref: 'x',
                 yref: 'paper',
-                line: {color: 'red', width: 2, dash: 'dot' }
+                line: {color: 'skyBlue', width: 2, dash: 'dot' }
             };
 
             const newLabel = {
@@ -327,7 +327,7 @@ function plot_figure(){
                 showarrow: false,
                 xanchor: 'center',
                 yanchor: 'bottom',
-                line: {color: 'red', width: 2, dash: 'dot' }
+                line: {color: 'skyBlue', width: 2, dash: 'dot' }
             }
 
             tagShapes.push(newShape);
@@ -342,13 +342,25 @@ function plot_figure(){
         for(i in xData){
             const overVal = branchData['allData'][overKey]['data'][i];
             const underVal = branchData['allData'][underKey]['data'][i];
-            ratioValues.push(overVal/underVal)
+
+            if(underVal == 0){
+                if(i > 0){
+                    ratioValues.push(ratioValues[i-1]);
+                }else{
+                    ratioValues.push(0);
+                }
+            }else{
+                ratioValues.push(overVal/underVal);
+            }
+
         }
+
         data.push({
             x: xData,
             y: ratioValues,
             type: 'lines',
             yaxis: 'y3',
+            line: { color: 'red', width: 2, dash: 'dot' },
             name: "Ratio " + overKey + " over " + underKey
         })
     }
@@ -372,10 +384,10 @@ function plot_figure(){
             //title: "Ratio",
             overlaying: 'y',
             //side: 'right',
-            //range: [0, 1],
             anchor: 'x',
             zeroline: false,
             showgrid: false,
+            showticklabels: false
         },
         shapes: tagShapes,
         annotations: tagLabels
@@ -463,10 +475,11 @@ function toggleCustomRatio(){
 
     if(checked){
         ratioDiv.style.display = "block";
-        plot_figure();
     }else{
         ratioDiv.style.display = "none";
     }
+
+    plot_figure();
 }
 
 function updateOver(component){

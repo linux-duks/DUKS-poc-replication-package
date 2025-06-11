@@ -23,10 +23,10 @@ header h1 {
     font-weight: 600;
 }
 
-/* Section Layout */
 .flexRow {
     display: flex;
-    justify-content: center; /* Center the plot and controls */
+    flex-direction: row; /* Ensure it's a row layout */
+    justify-content: center;
     align-items: flex-start; /* Align items to the top */
     padding: 20px;
     gap: 30px; /* Space between plot and controls */
@@ -49,6 +49,7 @@ header h1 {
     display: flex;
     flex-direction: column;
     gap: 15px; /* Space between control groups */
+    width: 10vw; /* Keep this width for controls */
 }
 
 #controls div {
@@ -63,8 +64,8 @@ header h1 {
     cursor: pointer;
 }
 
+/* Checkbox Styling */
 #controls input[type="checkbox"] {
-    /* Basic checkbox styling, relies on browser default for aesthetics */
     -webkit-appearance: none; /* Remove default styling for custom look */
     -moz-appearance: none;
     appearance: none;
@@ -98,12 +99,48 @@ header h1 {
     box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3); /* Focus ring */
 }
 
-.flexRow {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
+/* Select Component Styling */
+#controls select {
+    width: 100%; /* Make select boxes fill the available width */
+    padding: 10px 12px;
+    border: 1px solid #ddd; /* Light border */
+    border-radius: 5px; /* Slightly rounded corners */
+    background-color: #fcfcfc; /* Very light background for the select box */
+    font-size: 0.9em;
+    color: #333;
+    -webkit-appearance: none; /* Remove default dropdown arrow */
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-5.4H18.6c-5%200-9.3%201.8-13.2%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2013.2l128.9%20128.9c3.9%203.9%208.2%205.4%2013.2%205.4s9.3-1.8%2013.2-5.4L287%2095.4a17.6%2017.6%200%200%200%205.4-13.2c0-5-1.8-9.3-5.4-13.2z%22/%3E%3C/svg%3E'); /* Custom dropdown arrow */
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+    background-size: 12px auto;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-#controls{
-    width: 10vw;
+#controls select:focus {
+    border-color: #4CAF50; /* Green border on focus */
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3); /* Focus ring consistent with checkbox */
+}
+
+#controls select option {
+    padding: 8px 12px; /* Padding for options within the dropdown */
+    background-color: #fff;
+    color: #333;
+}
+
+/* Styling for the "by" text between selects */
+#customRatioArea {
+    display: flex;
+    flex-direction: column; /* Stack select boxes and "by" text vertically */
+    gap: 10px; /* Space between select boxes and text */
+    align-items: center; /* Center the text */
+}
+
+#customRatioArea > *:not(select) { /* Target the 'by' text */
+    font-size: 0.95em;
+    color: #555;
+    margin: 5px 0; /* Add some vertical margin for separation */
 }
