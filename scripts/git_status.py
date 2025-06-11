@@ -25,7 +25,7 @@ def fix_attributions(attributions, author, committer):
     new_attrs_block = []
 
     for attr in attrs:
-        # remove author and committer dupplicate
+        # remove author and committer duplicate
         if (
             attr.get("email")
             and attr["email"] != author.email
@@ -118,7 +118,7 @@ def run(kernel_path: str):
         if commit is not None:
             parents = commit.parents
 
-            # merge commits default to 0 (should be accounted by the commits themselfs)
+            # merge commits default to 0 (should be accounted by the commits themselves)
             insertions = 0
             deletions = 0
 

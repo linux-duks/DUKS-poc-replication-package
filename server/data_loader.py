@@ -40,7 +40,7 @@ def load_data(window_date_size=None):
         ]
     )
 
-    # add column with extra_contributors concated with author and commiter
+    # add column with extra_contributors concated with author and committer
     df = df.with_columns(
         [
             pl.concat_list("author", "committer", "extra_contributors").alias(
@@ -49,7 +49,7 @@ def load_data(window_date_size=None):
         ]
     )
 
-    # in case author and commiter are the same, filter uniqueness again
+    # in case author and committer are the same, filter uniqueness again
     df = df.with_columns(
         [pl.col("all_contributors").list.unique().alias("all_contributors")]
     )
@@ -104,7 +104,7 @@ def load_data(window_date_size=None):
         ]
     )
 
-    # collect here, next rolling opperations are not available in the lazy frame
+    # collect here, next rolling operations are not available in the lazy frame
     df = df.collect()
 
     # fill non existing dates with null values
@@ -115,7 +115,7 @@ def load_data(window_date_size=None):
     if window_date_size:
         # count number of unique authors over the windw_date_size period
         df = df.with_columns(
-            # commiters
+            # committers
             df.rolling(index_column="committer_date", period=window_date_size).agg(
                 pl.n_unique("author").alias("unique_authors")
             )
@@ -159,4 +159,5 @@ if __name__ == "__main__":
     print()
     data = load_data()
     print(data)
-    # print(data.head().to_dicts())
+    # print(data.columns)
+    # print(data.head().to_dict())
