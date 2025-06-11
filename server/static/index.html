@@ -2,14 +2,14 @@
 <html>
 <head>
     <meta charset="UTF-8" />    
-    <title>Contributors Viz</title>
+    <title>KTreezViz</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="static/script.js"></script>
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
     <header>
-        <h1>This is the tool name</h1>
+        <h1>KTreezViz</h1>
     </header>
     <section class="flexRow">
         <div id="plotDiv" style="width:60vw;height:80vh;"></div>
@@ -24,7 +24,7 @@
             </div>
             <div>
                 <input type="checkbox" name="checkReviewed_Bys" onchange="replotOnToggle(this)" />
-                <label for="checkReviewd_Bys"> Reviewd-by's </label>
+                <label for="checkReviewd_Bys"> Reviewed-by's </label>
             </div>
             <br>
             <div>
@@ -47,6 +47,34 @@
             <div>
                 <input type="checkbox" name="checkTags" onchange="replotOnToggle(this)" />
                 <label for="checkTags"> Show Release Tags </label>
+            </div>
+            <br>
+            <div>
+                <input id="checkCustom" type="checkbox" name="checkCustom" onchange="toggleCustomRatio()" />
+                <label for="checkCustom"> Plot Custom Ratio</label>
+            </div>
+            <div id="customRatioArea" style="display: none;">
+                <select name="overRatio" onchange="updateOver(this)">
+                    <option name="overAuthors">Authors</option>
+                    <option name="overCommiters">Commiters</option>
+                    <option name="overReviewed_Bys">Reviewed Bys</option>
+                    <option name="overLoC_Added">LoC Added</option>
+                    <option name="overLoC_Removed">LoC Removed</option>
+                    <option name="overLoC_Net">LoC Net</option>
+                    <option name="overLoC_Changes" selected>LoC Changes</option>
+                </select>
+                <br>
+                by
+                <br>
+                <select name="underRatio" onchange="updateUnder(this)">
+                    <option name="underAuthors">Authors</option>
+                    <option name="underCommiters" selected>Commiters</option>
+                    <option name="underReviewed_Bys">Reviewed Bys</option>
+                    <option name="underLoC_Added">LoC Added</option>
+                    <option name="underLoC_Removed">LoC Removed</option>
+                    <option name="underLoC_Net">LoC Net</option>
+                    <option name="underLoC_Changes">LoC Changes</option>
+                </select>
             </div>
         </div>
     </section>

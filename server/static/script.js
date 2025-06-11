@@ -258,6 +258,9 @@ function computeBranchData(commitList){
         'commitDates': dates,
         'tags' : tags,
         'showTags' : false,
+        'overRatio' : 'LoC Changes',
+        'underRatio' : 'Commiters',
+        'showRatio' : false
     };
 
     setBranchData(newBranchData);
@@ -332,6 +335,24 @@ function plot_figure(){
         }
     }
 
+    if(branchData["showRatio"]){
+        const ratioValues = [];
+        const overKey = branchData['overRatio'];
+        const underKey = branchData['underRatio'];
+        for(i in xData){
+            const overVal = branchData['allData'][overKey]['data'][i];
+            const underVal = branchData['allData'][underKey]['data'][i];
+            ratioValues.push(overVal/underVal)
+        }
+        data.push({
+            x: xData,
+            y: ratioValues,
+            type: 'lines',
+            yaxis: 'y3',
+            name: "Ratio " + overKey + " over " + underKey
+        })
+    }
+
     var layout = {
         xaxis: {
             title: 'Date',
@@ -345,6 +366,15 @@ function plot_figure(){
             overlaying: 'y',
             side: 'right',
             anchor: 'x',
+            showgrid: false,
+        },
+        yaxis3: {
+            //title: "Ratio",
+            overlaying: 'y',
+            //side: 'right',
+            //range: [0, 1],
+            anchor: 'x',
+            zeroline: false,
             showgrid: false,
         },
         shapes: tagShapes,
@@ -429,11 +459,27 @@ function toggleCustomRatio(){
     const checked = document.getElementById("checkCustom").checked
     const ratioDiv = document.getElementById("customRatioArea")
 
+    getBranchData()["showRatio"] = checked
+
     if(checked){
         ratioDiv.style.display = "block";
+        plot_figure();
     }else{
         ratioDiv.style.display = "none";
     }
 }
+
+function updateOver(component){
+    const chosen = component.selectedOptions[0].value;
+    getBranchData()["overRatio"] = chosen;
+    plot_figure();
+}
+
+function updateUnder(component){
+    const chosen = component.selectedOptions[0].value;
+    getBranchData()["underRatio"] = chosen;
+    plot_figure();
+}
+
 
 get_commits().then( (commits) => {computeBranchData(commits);plot_figure();})
