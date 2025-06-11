@@ -31,8 +31,8 @@ def get_commits():
     if request.method == "OPTIONS":  # CORS preflight
         return _build_cors_preflight_response()
     elif request.method == "GET":
-        # date_window_size with 2w by default
-        window_size = request.args.get("window_size", "2w")
+        # date_window_size, off by default
+        window_size = request.args.get("window_size", None)
 
         app.logger.info("GET commits with window: %s", window_size)
 

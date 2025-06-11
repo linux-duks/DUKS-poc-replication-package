@@ -1,5 +1,9 @@
-async function get_commits(window_size="2w"){
-    result = await fetch(`commits?window_size=${window_size}`)
+async function get_commits(window_size=null){
+		if (window_size === null){
+			result = await fetch('commits')
+		} else{
+			result = await fetch(`commits?window_size=${window_size}`)
+		}
     json_commits = await result.json()
     
     return json_commits
