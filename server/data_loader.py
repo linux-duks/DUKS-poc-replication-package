@@ -73,6 +73,9 @@ def load_data(window_date_size=None):
         pl.col("insertions").sum(),
         pl.col("deletions").sum(),
         pl.col("attributions").filter(pl.col("attributions") != "[]"),
+        # TODO: return fields when using this code to window functions
+        # pl.col("author") if windw_date_size,
+        # pl.col("committer") if windw_date_size,
         pl.col("tag").unique(),
         pl.col("extra_contributors")
         .filter(pl.col("extra_contributors") != [])
