@@ -3,14 +3,29 @@ import orjson
 
 
 # reads a list of dicts, and returns a list of unique emails
-def unique_emails_in_attributions(attributions: list[dict]) -> int | None:
+def unique_emails_in_attributions(attributions: list[str]) -> int | None:
     attributions = orjson.loads(attributions)
     if not attributions or len(attributions) == 0:
         return None
     return list(set([attr["email"] for attr in attributions]))
 
 
-def load_data(window_date_size="2w"):
+# take a list of stringified json list[dicts], parses, and joins them into a single list
+def merge_aggregated_attributions(attributions_list: list[str]) -> str | None:
+    merged = []
+    for attributions in attributions_list:
+        attributions = orjson.loads(attributions)
+        if isinstance(attributions, list):
+            merged = merged + attributions
+        else:
+            merged.append(attributions)
+
+    # TODO: deduplication
+    # return set([orjson.dumps(element, sort_keys=True) for element in merged])
+    return orjson.dumps(merged).decode()
+
+
+def load_data(window_date_size=None):
     # load data from csv
     df = pl.read_csv("../data/enhanced.csv", separator="|", try_parse_dates=True).lazy()
 
@@ -35,7 +50,9 @@ def load_data(window_date_size="2w"):
     )
 
     # in case author and commiter are the same, filter uniqueness again
-    df = df.with_columns([pl.col("all_contributors").list.unique()])
+    df = df.with_columns(
+        [pl.col("all_contributors").list.unique().alias("all_contributors")]
+    )
 
     # counts extra contributors in commit
     df = df.with_columns(
@@ -47,38 +64,71 @@ def load_data(window_date_size="2w"):
         pl.col("all_contributors").list.len().alias("num_total_contributors"),
     )
 
-    # sort the data frame before running rolling operation on top of date
-    df = df.sort("committer_date", descending=False, maintain_order=True)
+    df = df.sort("committer_date", descending=False)
+
+    df = df.group_by(
+        pl.col("committer_date").dt.truncate("1d").alias("committer_date")
+    ).agg(
+        pl.len().alias("number_of_commits"),
+        pl.col("insertions").sum(),
+        pl.col("deletions").sum(),
+        pl.col("attributions").filter(pl.col("attributions") != "[]"),
+        pl.col("tag").unique(),
+        pl.col("extra_contributors")
+        .filter(pl.col("extra_contributors") != [])
+        .flatten()
+        .unique(),
+        pl.col("all_contributors")
+        .filter(pl.col("all_contributors") != [])
+        .flatten()
+        .unique(),
+    )
+
+    # attributions were aggregated by combining list of strings. Parse their jsons here, and merge into a single json
+    df = df.with_columns(
+        [
+            pl.col("attributions")
+            .map_elements(merge_aggregated_attributions, return_dtype=pl.String)
+            .alias("attributions")
+        ]
+    )
 
     # collect here, next rolling opperations are not available in the lazy frame
     df = df.collect()
 
-    # count number of unique authors over the windw_date_size period
-    df = df.with_columns(
-        # commiters
-        df.rolling(index_column="committer_date", period=window_date_size).agg(
-            pl.n_unique("author").alias("unique_authors")
+    # fill non existing dates with null values
+    # TODO: upsampling break graph at the atm
+    # df = df.upsample(time_column="committer_date", every="1d")
+
+    # only run windowing if requested
+    if window_date_size:
+        # count number of unique authors over the windw_date_size period
+        df = df.with_columns(
+            # commiters
+            df.rolling(index_column="committer_date", period=window_date_size).agg(
+                pl.n_unique("author").alias("unique_authors")
+            )
         )
-    )
 
-    # count number of unique committer over the windw_date_size period
-    df = df.with_columns(
-        # authors
-        df.rolling(index_column="committer_date", period=window_date_size).agg(
-            pl.n_unique("committer").alias("unique_committer")
-        ),
-    )
+        # count number of unique committer over the windw_date_size period
+        df = df.with_columns(
+            # authors
+            df.rolling(index_column="committer_date", period=window_date_size).agg(
+                pl.n_unique("committer").alias("unique_committer")
+            ),
+        )
 
-    # count number of total contributors over the windw_date_size period
-    df = df.with_columns(
-        df.rolling(index_column="committer_date", period=window_date_size).agg(
-            pl.n_unique("all_contributors").alias("unique_contributors")
-        ),
-    )
+        # count number of total contributors over the windw_date_size period
+        df = df.with_columns(
+            df.rolling(index_column="committer_date", period=window_date_size).agg(
+                pl.n_unique("all_contributors").alias("unique_contributors")
+            ),
+        )
 
     return df
 
 
+# TODO: there are missing tags
 def load_tags():
     df = pl.read_csv(
         "../data/tags.csv",
