@@ -5,6 +5,7 @@ from io import StringIO
 import orjson
 import os
 import re
+from datetime import timedelta, datetime
 
 from pygit2 import Repository
 
@@ -49,8 +50,8 @@ def read_tags(repo: Repository) -> list[[str]]:
     tags.reverse()
     tag_list = []
 
-    # the desired tags are in this format: v6.9^{}"
-    regex = re.compile(r"v(\d+(?:\.\d+)*)\^{}")
+    # the desired tags are in this formats: v6.9^{}" or v6.9
+    regex = re.compile(r"v(\d+(?:\.\d+)*)(\^{})?")
 
     for tag_line in tags:
         sha, tag = tag_line.split(" ")
@@ -60,8 +61,25 @@ def read_tags(repo: Repository) -> list[[str]]:
         if "-rc" not in tag:
             match = regex.search(tag)
             if match:
-                tag_version = match.group(1)
-                tag_list.append([tag_version, sha])
+                try:
+                    commit = repo.get(sha)
+                    commit_time = None
+                    try:
+                        commit_time = datetime.fromtimestamp(commit.commit_time)
+                        (+timedelta(minutes=commit.commit_time_offset),)
+                    except Exception as e:
+                        logging.info(f"{sha} git object is probably not a commit: %s", e)
+                    tag_version = match.group(1)
+                    tag_list.append(
+                        [
+                            tag_version,
+                            sha,
+                            commit_time,
+                        ]
+                    )
+                except Exception as e:
+                    logging.error(e)
+                    pass
 
     return tag_list
 
@@ -72,7 +90,7 @@ def write_tags_file(tags: list[[str]]):
         tags_file, delimiter="|", quoting=csv.QUOTE_ALL, lineterminator="\n"
     )
 
-    tags_writer.writerow(["tag", "commit"])
+    tags_writer.writerow(["tag", "commit", "date"])
 
     for tag_line in tags:
         tags_writer.writerow(tag_line)
