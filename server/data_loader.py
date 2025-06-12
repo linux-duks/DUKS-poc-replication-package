@@ -2,13 +2,13 @@ import polars as pl
 
 
 def load_by_commits(window_date_size=None):
-    df = pl.read_parquet("../data/enhaced.parquet")
+    df = pl.read_parquet("../data/by_commit.parquet")
 
     return df
 
 
 def load_data(window_date_size=None):
-    df = pl.read_parquet("../data/rows_by_date.parquet")
+    df = pl.read_parquet("../data/by_date.parquet")
 
     # only run windowing if requested
     if window_date_size:

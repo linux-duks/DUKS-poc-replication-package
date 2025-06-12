@@ -146,11 +146,6 @@ def run():
             "extra_attributions_in_maintainers_file": extra,
         }
 
-    # def intersections(row):
-    # mainteiners = set(row["maintainers"])
-    # commiter = row["committer"]
-
-    logging.info("intersections")
     # run intersections between maintainers and other columns
     df = df.with_columns(
         # intersection between authors and maintainers file
@@ -163,13 +158,16 @@ def run():
     ).unnest("intersect")
 
     logging.info("collecting polars operations")
-    # df = df.drop("maintainers")
     df = df.collect()
     print(df.head())
     print(df.columns)
 
     df = df.sort("committer_date", descending=False)
-    df.write_parquet("../data/enhanced.parquet")
+
+    logging.info("writing by_commit.parquet file ")
+
+    df = df.drop("maintainers")
+    df.write_parquet("../data/by_commit.parquet")
 
     # transform to rows by date
     df = df.lazy()
@@ -184,9 +182,10 @@ def run():
         pl.col("deletions").sum(),
         # attributions
         pl.col("attributions").filter(pl.col("attributions") != "[]"),
-        # TODO: return fields when using this code to window functions
-        # pl.col("author") if windw_date_size,
-        # pl.col("committer") if windw_date_size,
+        # author
+        pl.col("author").unique(),
+        # committer
+        pl.col("committer").unique(),
         # tag
         pl.col("tag").unique(),
         # extra_contributors
@@ -210,6 +209,14 @@ def run():
         pl.col("extra_attributions_in_maintainers_file").flatten().unique(),
     )
 
+    df = df.sort("committer_date", descending=False)
+    # collect here, next rolling operations are not available in the lazy frame
+    logging.info("collecting grouped df")
+    df = df.collect()
+    logging.info("collected")
+    logging.info(df)
+    logging.info(df.columns)
+
     df = df.with_columns(
         [
             # attributions were aggregated by combining list of strings. Parse their jsons here, and merge into a single json
@@ -224,14 +231,12 @@ def run():
                 return_dtype=pl.String,
             )
             .alias("tag"),
-            # remove null emelemnts in list
+            # remove null elements in list
             pl.col("extra_attributions_in_maintainers_file").list.drop_nulls(),
+            pl.col("author_in_maintainers_file").list.drop_nulls(),
+            pl.col("committer_in_maintainers_file").list.drop_nulls(),
         ]
     )
-
-    df = df.sort("committer_date", descending=False)
-    # collect here, next rolling operations are not available in the lazy frame
-    df = df.collect()
 
     # fill non existing dates with null values
     df = df.upsample(time_column="committer_date", every="1d")
@@ -250,13 +255,20 @@ def run():
             pl.col("number_of_commits").fill_null(strategy="zero"),
             pl.col("insertions").fill_null(strategy="zero"),
             pl.col("deletions").fill_null(strategy="zero"),
+            pl.col("tag").fill_null(strategy="zero"),
+            pl.col("extra_contributors").fill_null(value=[]),
+            pl.col("attributions").fill_null(value="[]"),
+            pl.col("all_contributors").fill_null(value=[]),
             pl.col("author_in_maintainers_file").fill_null(value=[]),
             pl.col("committer_in_maintainers_file").fill_null(value=[]),
             pl.col("extra_attributions_in_maintainers_file").fill_null(value=[]),
         ]
     )
 
-    df.write_parquet("../data/rows_by_date.parquet")
+    logging.info("writing by_date.parquet file ")
+    logging.info(df)
+    logging.info(df.columns)
+    df.write_parquet("../data/by_date.parquet")
 
 
 if __name__ == "__main__":
