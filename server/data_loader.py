@@ -1,31 +1,13 @@
 import polars as pl
-import orjson
 
 
-# reads a list of dicts, and returns a list of unique emails
-def unique_emails_in_attributions(attributions: list[str]) -> int | None:
-    attributions = orjson.loads(attributions)
-    if not attributions or len(attributions) == 0:
-        return None
-    return list(set([attr["email"] for attr in attributions]))
+def load_by_commits(window_date_size=None):
+    df = pl.read_parquet("../data/by_commit.parquet")
+
+    return df
 
 
-# take a list of stringified json list[dicts], parses, and joins them into a single list
-def merge_aggregated_attributions(attributions_list: list[str]) -> str | None:
-    merged = []
-    for attributions in attributions_list:
-        attributions = orjson.loads(attributions)
-        if isinstance(attributions, list):
-            merged = merged + attributions
-        else:
-            merged.append(attributions)
-
-    # TODO: deduplication
-    # return set([orjson.dumps(element, sort_keys=True) for element in merged])
-    return orjson.dumps(merged).decode()
-
-
-def load_data(window_date_size=20):
+def old_load_data(window_date_size=20):
     # load data from csv
     df = pl.read_csv("../data/enhanced.csv", separator="|", try_parse_dates=True).lazy()
 
@@ -110,6 +92,8 @@ def load_data(window_date_size=20):
     # fill non existing dates with null values
     # TODO: upsampling break graph at the atm
     # df = df.upsample(time_column="committer_date", every="1d")
+def load_data(window_date_size=14):
+    df = pl.read_parquet("../data/by_date.parquet")
 
     # only run windowing if requested
     if window_date_size:
@@ -141,10 +125,7 @@ def load_data(window_date_size=20):
 
 # TODO: there are missing tags
 def load_tags():
-    df = pl.read_csv(
-        "../data/tags.csv",
-        separator="|",
-    )
+    df = pl.read_csv("../data/tags.csv", separator="|", infer_schema=False)
 
     # TODO: change order ?
     # df = df.sort(
@@ -159,5 +140,5 @@ if __name__ == "__main__":
     print()
     data = load_data()
     print(data)
-    # print(data.columns)
+    print(data.columns)
     # print(data.head().to_dict())

@@ -9,11 +9,30 @@ async function get_commits(window_size=null){
     return json_commits
 }
 
-async function get_tags(){
+async function getTagsIn(begin,end){
     result = await fetch("tags")
-    json_tags = await result.json()
+    jsonTags = await result.json()
     
-    return json_tags
+    const selectedTags = []
+
+    console.log(jsonTags)
+
+    for(tag of jsonTags){
+        if(tag["date"] == ""){
+            continue;
+        }
+        console.log(tag["date"])
+        
+        const tagDate = new Date(tag["date"])
+        if(tagDate >= begin && tagDate <= end){
+            console.log("In:" + tag)
+            selectedTags.push([tagDate,tag["tag"]])
+        }else{
+            console.log("Out:" + tag)
+        }     
+    }
+
+    return selectedTags
 }
 // -----------------------------------------------------------------------------------
 // Computing Sliding Window Data
@@ -38,8 +57,6 @@ function slidingWindowDiffs(commits, intervalLengthDays){
     let running_acc = 0;
     let running_changes = 0;
     let running_no_commits = 0;
-    
-    let tag_dates = [];
 
     let window_begin = 0;
     let window_end = -1;
@@ -71,9 +88,6 @@ function slidingWindowDiffs(commits, intervalLengthDays){
                 running_no_commits += commits[window_end]["commits"]
             }
 
-            if(commits[window_end]["tag"]){
-                tag_dates.push([new Date(commits[window_end]["committer_date"]),commits[window_end]["tag"]])
-            }
         }
 
         //Update window beginning
@@ -101,7 +115,7 @@ function slidingWindowDiffs(commits, intervalLengthDays){
 
     }
 
-    return [date_points, plus_points, minus_points, acc_points,modification_points,tag_dates,no_commits]
+    return [date_points, plus_points, minus_points, acc_points,modification_points,no_commits]
 }
 
 function slidingWindowAuthors(commits, intervalLengthDays){
@@ -132,19 +146,24 @@ function slidingWindowAuthors(commits, intervalLengthDays){
         while(window_end < commits.length - 1 && maxDate >= new Date(commits[window_end+1]["committer_date"])){
             window_end+=1
 
-            for(thisAuthor of commits[window_end]["author"]){
-                if (thisAuthor in runningAuthors){
-                    runningAuthors[thisAuthor] = runningAuthors[thisAuthor] + 1;
-                }else{
-                    runningAuthors[thisAuthor] = 1;
+            if(commits[window_end]["author"]){
+                for(thisAuthor of commits[window_end]["author"]){
+                    if (thisAuthor in runningAuthors){
+                        runningAuthors[thisAuthor] = runningAuthors[thisAuthor] + 1;
+                    }else{
+                        runningAuthors[thisAuthor] = 1;
+                    }
                 }
             }
 
-            for(thisCommitter of commits[window_end]["committer"]){
-                if (thisCommitter in runningCommitters){
-                    runningCommitters[thisCommitter] = runningCommitters[thisCommitter] + 1;
-                }else{
-                    runningCommitters[thisCommitter] = 1
+            
+            if(commits[window_end]["committer"]){
+                for(thisCommitter of commits[window_end]["committer"]){
+                    if (thisCommitter in runningCommitters){
+                        runningCommitters[thisCommitter] = runningCommitters[thisCommitter] + 1;
+                    }else{
+                        runningCommitters[thisCommitter] = 1
+                    }
                 }
             }
 
@@ -176,20 +195,23 @@ function slidingWindowAuthors(commits, intervalLengthDays){
         while(minDate > new Date(commits[window_begin]["committer_date"])){
             window_begin += 1
 
-            
-            for(thisAuthor of commits[window_begin]["author"]){
-                if (runningAuthors[thisAuthor] <= 1){
-                    delete runningAuthors[thisAuthor];
-                }else{
-                    runningAuthors[thisAuthor] = runningAuthors[thisAuthor] - 1;
+            if(commits[window_begin]["author"]){
+                for(thisAuthor of commits[window_begin]["author"]){
+                    if (runningAuthors[thisAuthor] <= 1){
+                        delete runningAuthors[thisAuthor];
+                    }else{
+                        runningAuthors[thisAuthor] = runningAuthors[thisAuthor] - 1;
+                    }
                 }
             }
 
-            for(thisCommitter of commits[window_begin]["committer"]){
-                if (runningCommitters[thisCommitter] <= 1){
-                    delete runningCommitters[thisCommitter]
-                }else{
-                    runningCommitters[thisCommitter] = runningCommitters[thisCommitter] - 1;
+            if(commits[window_begin]["committer"]){
+                for(thisCommitter of commits[window_begin]["committer"]){
+                    if (runningCommitters[thisCommitter] <= 1){
+                        delete runningCommitters[thisCommitter]
+                    }else{
+                        runningCommitters[thisCommitter] = runningCommitters[thisCommitter] - 1;
+                    }
                 }
             }
 
@@ -249,9 +271,9 @@ function getBranchData(){
  * Updates the global variable 'branchData' with the new data.
  * @param {*} commitList List of commits from the tree to be analyzed.
  */
-function computeBranchData(commitList){
+async function computeBranchData(commitList){
 
-    WINDOW_RADIUS = 20
+    WINDOW_RADIUS = 14
 
     commits = loadExtraAttributions(commitList)
 
@@ -259,7 +281,7 @@ function computeBranchData(commitList){
     const diffs_results = slidingWindowDiffs(commits,WINDOW_RADIUS)
 
     const dates = contribs_results[0];
-    const tags = diffs_results[5];
+    const tags = await getTagsIn(dates[0],dates[dates.length-1]);
 
     const attribData = contribs_results[3];
     const allData = {
@@ -270,7 +292,7 @@ function computeBranchData(commitList){
         'LoC Removed' : {'axisLabel': 'LoC', 'data': diffs_results[2]},
         'LoC Net' : {'axisLabel': 'LoC', 'data': diffs_results[3]},
         'LoC Changes' :  {'axisLabel': 'LoC', 'data': diffs_results[4]},
-        'Commits' : {'axisLabel': 'Contributions', 'data': diffs_results[6]}
+        'Commits' : {'axisLabel': 'Contributions', 'data': diffs_results[5]}
     }
 
     const newBranchData = {
@@ -286,6 +308,7 @@ function computeBranchData(commitList){
     };
 
     setBranchData(newBranchData);
+    plot_figure();
 }
 
 function plot_figure(){
@@ -419,21 +442,6 @@ function plot_figure(){
 
 }
 
-/**
- * map_tags loads the tag list and returns a HashMap of TAG to COMMIT
- * returns the map and the array
- * @param {Array.<{tag: String, commit: String}>} tags
- * @returns [{Object.<String, String>}, {Array.<{tag: String, commit: String}>}]
- */
-function map_tags(tags){
-	var mappedTags = tags.reduce(function(map, obj) {
-			map[obj.tag] = obj.commit;
-			return map;
-	}, {});
-	return mappedTags, tags
-}
-// WIP
-get_tags().then( (tags) => map_tags(tags))
 
 /**
  * Parses the 'attributions' field of every commit object of a list
@@ -517,4 +525,4 @@ function updateUnder(component){
 }
 
 
-get_commits().then( (commits) => {computeBranchData(commits);plot_figure();})
+get_commits().then( (commits) => {computeBranchData(commits)})
