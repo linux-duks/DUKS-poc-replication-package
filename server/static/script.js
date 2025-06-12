@@ -15,21 +15,15 @@ async function getTagsIn(begin,end){
     
     const selectedTags = []
 
-    console.log(jsonTags)
-
     for(tag of jsonTags){
         if(tag["date"] == ""){
             continue;
         }
-        console.log(tag["date"])
         
         const tagDate = new Date(tag["date"])
         if(tagDate >= begin && tagDate <= end){
-            console.log("In:" + tag)
             selectedTags.push([tagDate,tag["tag"]])
-        }else{
-            console.log("Out:" + tag)
-        }     
+        }
     }
 
     return selectedTags
@@ -84,8 +78,8 @@ function slidingWindowDiffs(commits, intervalLengthDays){
             running_acc += new_plus - new_minus
             running_changes += new_plus + new_minus
 
-            if(commits[window_end]["commits"]){
-                running_no_commits += commits[window_end]["commits"]
+            if(commits[window_end]["number_of_commits"]){
+                running_no_commits += commits[window_end]["number_of_commits"]
             }
 
         }
@@ -99,8 +93,8 @@ function slidingWindowDiffs(commits, intervalLengthDays){
             running_minus -= old_minus
             running_acc -= old_plus - old_minus
             running_changes -= old_plus + old_minus
-            if(commits[window_begin]["commits"]){
-                running_no_commits -= commits[window_begin]["commits"]
+            if(commits[window_begin]["number_of_commits"]){
+                running_no_commits -= commits[window_begin]["number_of_commits"]
             }
         }
 
