@@ -1,0 +1,146 @@
+/* Basic Reset & Body Styling */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f8f8; /* Light background for a clean look */
+    color: #333; /* Dark gray text for good readability */
+    line-height: 1.6;
+}
+
+/* Header Styling */
+header {
+    background-color: #ffffff; /* White header background */
+    padding: 15px 30px;
+    border-bottom: 1px solid #eee; /* Subtle bottom border */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Soft shadow for depth */
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+    color: #2c3e50; /* Darker title color */
+    font-size: 1.8em;
+    font-weight: 600;
+}
+
+.flexRow {
+    display: flex;
+    flex-direction: row; /* Ensure it's a row layout */
+    justify-content: center;
+    align-items: flex-start; /* Align items to the top */
+    padding: 20px;
+    gap: 30px; /* Space between plot and controls */
+}
+
+/* Plot Container */
+#plotDiv {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* More prominent shadow for the plot */
+    overflow: hidden; /* Ensures plot content stays within bounds */
+}
+
+/* Controls Styling */
+#controls {
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08); /* Soft shadow for controls */
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Space between control groups */
+    width: 10vw; /* Keep this width for controls */
+}
+
+#controls div {
+    display: flex;
+    align-items: center;
+}
+
+#controls label {
+    margin-left: 8px;
+    font-size: 0.95em;
+    color: #555;
+    cursor: pointer;
+}
+
+/* Checkbox Styling */
+#controls input[type="checkbox"] {
+    -webkit-appearance: none; /* Remove default styling for custom look */
+    -moz-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    outline: none;
+    transition: all 0.2s ease-in-out;
+}
+
+#controls input[type="checkbox"]:checked {
+    background-color: #4CAF50; /* Green when checked */
+    border-color: #4CAF50;
+}
+
+#controls input[type="checkbox"]:checked::before {
+    content: '\2713'; /* Checkmark symbol */
+    display: block;
+    color: white;
+    font-size: 14px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#controls input[type="checkbox"]:focus {
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3); /* Focus ring */
+}
+
+/* Select Component Styling */
+#controls select {
+    width: 100%; /* Make select boxes fill the available width */
+    padding: 10px 12px;
+    border: 1px solid #ddd; /* Light border */
+    border-radius: 5px; /* Slightly rounded corners */
+    background-color: #fcfcfc; /* Very light background for the select box */
+    font-size: 0.9em;
+    color: #333;
+    -webkit-appearance: none; /* Remove default dropdown arrow */
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http://www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-5.4H18.6c-5%200-9.3%201.8-13.2%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2013.2l128.9%20128.9c3.9%203.9%208.2%205.4%2013.2%205.4s9.3-1.8%2013.2-5.4L287%2095.4a17.6%2017.6%200%200%200%205.4-13.2c0-5-1.8-9.3-5.4-13.2z%22/%3E%3C/svg%3E'); /* Custom dropdown arrow */
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+    background-size: 12px auto;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#controls select:focus {
+    border-color: #4CAF50; /* Green border on focus */
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3); /* Focus ring consistent with checkbox */
+}
+
+#controls select option {
+    padding: 8px 12px; /* Padding for options within the dropdown */
+    background-color: #fff;
+    color: #333;
+}
+
+/* Styling for the "by" text between selects */
+#customRatioArea {
+    display: flex;
+    flex-direction: column; /* Stack select boxes and "by" text vertically */
+    gap: 10px; /* Space between select boxes and text */
+    align-items: center; /* Center the text */
+}
+
+#customRatioArea > *:not(select) { /* Target the 'by' text */
+    font-size: 0.95em;
+    color: #555;
+    margin: 5px 0; /* Add some vertical margin for separation */
+}
