@@ -29,7 +29,8 @@ const DATESAMPLINGINTERVAL = 1//In days, used for plots
  */
 function slidingWindowDiffs(commits, intervalLengthDays){
 
-    const FIRSTCOMMITDATE = new Date(commits[0]["committer_date"]);
+    const FIRSTCOMMITDATE = new Date(commits[0]["committer_date"])
+    FIRSTCOMMITDATE.setDate(FIRSTCOMMITDATE.getDate() + intervalLengthDays + 1);
     const LASTCOMMITDATE = new Date(commits[commits.length-1]["committer_date"]);
 
     let running_minus = 0;
@@ -64,7 +65,7 @@ function slidingWindowDiffs(commits, intervalLengthDays){
             running_acc += new_plus - new_minus
             running_changes += new_plus + new_minus
 
-            if(commits[window_end]["tag"].length > 0){
+            if(commits[window_end]["tag"]){
                 tag_dates.push([new Date(commits[window_end]["committer_date"]),commits[window_end]["tag"]])
             }
         }
@@ -95,7 +96,8 @@ function slidingWindowDiffs(commits, intervalLengthDays){
 
 function slidingWindowAuthors(commits, intervalLengthDays){
 
-    const FIRSTCOMMITDATE = new Date(commits[0]["committer_date"]);
+    const FIRSTCOMMITDATE = new Date(commits[0]["committer_date"])
+    FIRSTCOMMITDATE.setDate(FIRSTCOMMITDATE.getDate() + intervalLengthDays + 1);
     const LASTCOMMITDATE = new Date(commits[commits.length-1]["committer_date"]);
 
     let runningAuthors = {};
@@ -120,18 +122,20 @@ function slidingWindowAuthors(commits, intervalLengthDays){
         while(window_end < commits.length - 1 && maxDate >= new Date(commits[window_end+1]["committer_date"])){
             window_end+=1
 
-            const thisAuthor = commits[window_end]["author"] 
-            if (thisAuthor in runningAuthors){
-                runningAuthors[thisAuthor] = runningAuthors[thisAuthor] + 1;
-            }else{
-                runningAuthors[thisAuthor] = 1;
+            for(thisAuthor of commits[window_end]["author"]){
+                if (thisAuthor in runningAuthors){
+                    runningAuthors[thisAuthor] = runningAuthors[thisAuthor] + 1;
+                }else{
+                    runningAuthors[thisAuthor] = 1;
+                }
             }
 
-            const thisCommitter = commits[window_end]["committer"];
-            if (thisCommitter in runningCommitters){
-                runningCommitters[thisCommitter] = runningCommitters[thisCommitter] + 1;
-            }else{
-                runningCommitters[thisCommitter] = 1
+            for(thisCommitter of commits[window_end]["committer"]){
+                if (thisCommitter in runningCommitters){
+                    runningCommitters[thisCommitter] = runningCommitters[thisCommitter] + 1;
+                }else{
+                    runningCommitters[thisCommitter] = 1
+                }
             }
 
             const thisAttributions = commits[window_end]["attributions"];
@@ -162,18 +166,21 @@ function slidingWindowAuthors(commits, intervalLengthDays){
         while(minDate > new Date(commits[window_begin]["committer_date"])){
             window_begin += 1
 
-            const thisAuthor = commits[window_begin]["author"] 
-            if (runningAuthors[thisAuthor] <= 1){
-                delete runningAuthors[thisAuthor];
-            }else{
-                runningAuthors[thisAuthor] = runningAuthors[thisAuthor] - 1;
+            
+            for(thisAuthor of commits[window_begin]["author"]){
+                if (runningAuthors[thisAuthor] <= 1){
+                    delete runningAuthors[thisAuthor];
+                }else{
+                    runningAuthors[thisAuthor] = runningAuthors[thisAuthor] - 1;
+                }
             }
 
-            const thisCommitter = commits[window_begin]["committer"];
-            if (runningCommitters[thisCommitter] <= 1){
-                delete runningCommitters[thisCommitter]
-            }else{
-                runningCommitters[thisCommitter] = runningCommitters[thisCommitter] - 1;
+            for(thisCommitter of commits[window_begin]["committer"]){
+                if (runningCommitters[thisCommitter] <= 1){
+                    delete runningCommitters[thisCommitter]
+                }else{
+                    runningCommitters[thisCommitter] = runningCommitters[thisCommitter] - 1;
+                }
             }
 
             const thisAttributions = commits[window_begin]["attributions"];
@@ -453,7 +460,7 @@ function replotOnToggle(toggledInputElem){
                 return;
             }
             dataPoints["leftDataPoints"].push(titleValue);
-        }else{
+        }else if(dataPoints["leftDataPoints"].includes(titleValue)){
             dataPoints["leftDataPoints"].splice(dataPoints["leftDataPoints"].indexOf(titleValue),1);
         }
     }else{
@@ -462,7 +469,7 @@ function replotOnToggle(toggledInputElem){
                 return;
             }
             dataPoints["rightDataPoints"].push(titleValue);
-        }else{
+        }else if(dataPoints["rightDataPoints"].includes(titleValue)){
             dataPoints["rightDataPoints"].splice(dataPoints["rightDataPoints"].indexOf(titleValue),1);
         }
     }

@@ -25,7 +25,7 @@ def merge_aggregated_attributions(attributions_list: list[str]) -> str | None:
     return orjson.dumps(merged).decode()
 
 
-def load_data(window_date_size=None):
+def load_data(window_date_size=20):
     # load data from csv
     df = pl.read_csv("../data/enhanced.csv", separator="|", try_parse_dates=True).lazy()
 
@@ -74,8 +74,8 @@ def load_data(window_date_size=None):
         pl.col("deletions").sum(),
         pl.col("attributions").filter(pl.col("attributions") != "[]"),
         # TODO: return fields when using this code to window functions
-        # pl.col("author") if windw_date_size,
-        # pl.col("committer") if windw_date_size,
+        pl.col("author"),
+        pl.col("committer"),
         pl.col("tag").unique(),
         pl.col("extra_contributors")
         .filter(pl.col("extra_contributors") != [])
@@ -97,7 +97,7 @@ def load_data(window_date_size=None):
             # coalease tags into a space separated string, or null
             pl.col("tag")
             .map_elements(
-                lambda tags: None if len or len(tags) < 1 else " ".join(tags),
+                lambda tags: None if len(tags) < 1 else " ".join(tags),
                 return_dtype=pl.String,
             )
             .alias("tag"),
