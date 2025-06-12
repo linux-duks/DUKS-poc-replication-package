@@ -258,6 +258,8 @@ def run():
             pl.col("tag").fill_null(strategy="zero"),
             pl.col("extra_contributors").fill_null(value=[]),
             pl.col("attributions").fill_null(value="[]"),
+            pl.col("author").fill_null(value=[]),
+            pl.col("committer").fill_null(value=[]),
             pl.col("all_contributors").fill_null(value=[]),
             pl.col("author_in_maintainers_file").fill_null(value=[]),
             pl.col("committer_in_maintainers_file").fill_null(value=[]),
