@@ -37,6 +37,7 @@ function slidingWindowDiffs(commits, intervalLengthDays){
     let running_plus = 0;
     let running_acc = 0;
     let running_changes = 0;
+    let running_no_commits = 0;
     
     let tag_dates = [];
 
@@ -48,6 +49,7 @@ function slidingWindowDiffs(commits, intervalLengthDays){
     minus_points = []
     acc_points = []
     modification_points = []
+    no_commits = []
 
     let thisDate = FIRSTCOMMITDATE;
     while(thisDate < LASTCOMMITDATE){
@@ -65,6 +67,10 @@ function slidingWindowDiffs(commits, intervalLengthDays){
             running_acc += new_plus - new_minus
             running_changes += new_plus + new_minus
 
+            if(commits[window_end]["commits"]){
+                running_no_commits += commits[window_end]["commits"]
+            }
+
             if(commits[window_end]["tag"]){
                 tag_dates.push([new Date(commits[window_end]["committer_date"]),commits[window_end]["tag"]])
             }
@@ -79,6 +85,9 @@ function slidingWindowDiffs(commits, intervalLengthDays){
             running_minus -= old_minus
             running_acc -= old_plus - old_minus
             running_changes -= old_plus + old_minus
+            if(commits[window_begin]["commits"]){
+                running_no_commits -= commits[window_begin]["commits"]
+            }
         }
 
         date_points.push(thisDate);
@@ -86,12 +95,13 @@ function slidingWindowDiffs(commits, intervalLengthDays){
         minus_points.push(running_minus);
         acc_points.push(running_acc);//Math.abs(running_acc));
         modification_points.push(running_changes);
+        no_commits.push(running_no_commits);
 
         thisDate.setDate(thisDate.getDate()+DATESAMPLINGINTERVAL);
 
     }
 
-    return [date_points, plus_points, minus_points, acc_points,modification_points,tag_dates]
+    return [date_points, plus_points, minus_points, acc_points,modification_points,tag_dates,no_commits]
 }
 
 function slidingWindowAuthors(commits, intervalLengthDays){
@@ -253,13 +263,14 @@ function computeBranchData(commitList){
 
     const attribData = contribs_results[3];
     const allData = {
-        'Authors' : {'axisLabel': 'Contributors', 'data': contribs_results[1]},
-        'Commiters' : {'axisLabel': 'Contributors', 'data': contribs_results[2]},
-        'Reviewed Bys' : {'axisLabel': 'Contributors', 'data': attribData["reviewed-by"]["runningCount"]},
+        'Authors' : {'axisLabel': 'Contributions', 'data': contribs_results[1]},
+        'Commiters' : {'axisLabel': 'Contributions', 'data': contribs_results[2]},
+        'Reviewed Bys' : {'axisLabel': 'Contributions', 'data': attribData["reviewed-by"]["runningCount"]},
         'LoC Added' : {'axisLabel': 'LoC', 'data': diffs_results[1]},
         'LoC Removed' : {'axisLabel': 'LoC', 'data': diffs_results[2]},
         'LoC Net' : {'axisLabel': 'LoC', 'data': diffs_results[3]},
         'LoC Changes' :  {'axisLabel': 'LoC', 'data': diffs_results[4]},
+        'Commits' : {'axisLabel': 'Contributions', 'data': diffs_results[6]}
     }
 
     const newBranchData = {
@@ -436,7 +447,7 @@ function loadExtraAttributions(commits){
     }
     return commits
 }
-const LEFTDATAPOINTS = ["Authors","Commiters","Reviewed Bys"];
+const LEFTDATAPOINTS = ["Authors","Commiters","Reviewed Bys","Commits"];
 
 /**
  * Replots the graph once a given input is toggled.

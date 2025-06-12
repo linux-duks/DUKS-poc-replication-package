@@ -28,6 +28,11 @@
             </div>
             <br>
             <div>
+                <input type="checkbox" name="checkCommits" onchange="replotOnToggle(this)" />
+                <label for="checkCommits"> Commits </label>
+            </div>
+            <br>
+            <div>
                 <input type="checkbox" name="checkLoC_Added" onchange="replotOnToggle(this)" />
                 <label for="checkLoC_Added"> LoC added </label> 
             </div>
@@ -58,6 +63,7 @@
                     <option name="overAuthors">Authors</option>
                     <option name="overCommiters">Commiters</option>
                     <option name="overReviewed_Bys">Reviewed Bys</option>
+                    <option name="overCommits">Commits</option>
                     <option name="overLoC_Added">LoC Added</option>
                     <option name="overLoC_Removed">LoC Removed</option>
                     <option name="overLoC_Net">LoC Net</option>
@@ -68,6 +74,7 @@
                     <option name="underAuthors">Authors</option>
                     <option name="underCommiters" selected>Commiters</option>
                     <option name="underReviewed_Bys">Reviewed Bys</option>
+                    <option name="underCommits">Commits</option>
                     <option name="underLoC_Added">LoC Added</option>
                     <option name="underLoC_Removed">LoC Removed</option>
                     <option name="underLoC_Net">LoC Net</option>

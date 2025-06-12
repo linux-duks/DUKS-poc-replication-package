@@ -69,7 +69,7 @@ def load_data(window_date_size=20):
     df = df.group_by(
         pl.col("committer_date").dt.truncate("1d").alias("committer_date")
     ).agg(
-        pl.len().alias("number_of_commits"),
+        pl.len().alias("commits"),
         pl.col("insertions").sum(),
         pl.col("deletions").sum(),
         pl.col("attributions").filter(pl.col("attributions") != "[]"),
