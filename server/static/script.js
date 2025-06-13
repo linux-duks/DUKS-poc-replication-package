@@ -61,6 +61,7 @@ function slidingWindowDiffs(commits, intervalLengthDays){
     acc_points = []
     modification_points = []
     no_commits = []
+    declared_maintainers = []
 
     let thisDate = FIRSTCOMMITDATE;
     while(thisDate < LASTCOMMITDATE){
@@ -81,6 +82,8 @@ function slidingWindowDiffs(commits, intervalLengthDays){
             if(commits[window_end]["number_of_commits"]){
                 running_no_commits += commits[window_end]["number_of_commits"]
             }
+
+            declared_maintainers.push(commits[window_end]["declared_maintainers"])
 
         }
 
@@ -109,7 +112,7 @@ function slidingWindowDiffs(commits, intervalLengthDays){
 
     }
 
-    return [date_points, plus_points, minus_points, acc_points,modification_points,no_commits]
+    return [date_points, plus_points, minus_points, acc_points,modification_points,no_commits,declared_maintainers]
 }
 
 function slidingWindowAuthors(commits, intervalLengthDays){
@@ -122,12 +125,18 @@ function slidingWindowAuthors(commits, intervalLengthDays){
     let runningCommitters = {};
     let runningAttributions = {};
 
+    let runningMaintAuthors = {};
+    let runningMaintExtras = [];
+
     let window_begin = 0;
     let window_end = -1;
 
     date_points = []
     num_authors = []
     num_committers = []
+
+    num_maint_authors = []
+    num_maint_extras = []
 
     let noCommits = 0
     let thisDate = FIRSTCOMMITDATE;
@@ -158,6 +167,24 @@ function slidingWindowAuthors(commits, intervalLengthDays){
                     }else{
                         runningCommitters[thisCommitter] = 1
                     }
+                }
+            }
+
+            for(thisAuthor of commits[window_end]["author_in_maintainers_file"]){
+                if (thisAuthor in runningMaintAuthors){
+                    runningMaintAuthors[thisAuthor] = runningMaintAuthors[thisAuthor] + 1;
+                }else{
+                    runningMaintAuthors[thisAuthor] = 1;
+                }
+            }
+            
+            const extraMaintainers = commits[window_end]["committer_in_maintainers_file"].concat(commits[window_end]["extra_attributions_in_maintainers_file"])
+
+            for(thisMaint of extraMaintainers){
+                if (thisMaint in runningMaintExtras){
+                    runningMaintExtras[thisMaint] = runningMaintExtras[thisMaint] + 1;
+                }else{
+                    runningMaintExtras[thisMaint] = 1;
                 }
             }
 
@@ -209,6 +236,24 @@ function slidingWindowAuthors(commits, intervalLengthDays){
                 }
             }
 
+            for(thisAuthor of commits[window_begin]["author_in_maintainers_file"]){
+                if (runningMaintAuthors[thisAuthor] <= 1){
+                    delete runningMaintAuthors[thisAuthor]
+                }else{
+                    runningMaintAuthors[thisAuthor] = runningMaintAuthors[thisAuthor] - 1;
+                }
+            }
+            
+            const extraMaintainers = commits[window_begin]["committer_in_maintainers_file"].concat(commits[window_begin]["extra_attributions_in_maintainers_file"])
+
+            for(thisMaint of extraMaintainers){
+                if (runningMaintExtras[thisMaint] <= 1){
+                    delete runningMaintExtras[thisMaint];
+                }else{
+                    runningMaintExtras[thisMaint] = runningMaintExtras[thisMaint] + 1;
+                }
+            }
+
             const thisAttributions = commits[window_begin]["attributions"];
             for(attribution of thisAttributions){
                 const attrType = attribution["type"].toLowerCase();
@@ -224,6 +269,8 @@ function slidingWindowAuthors(commits, intervalLengthDays){
         date_points.push(new Date(thisDate));
         num_authors.push(Object.keys(runningAuthors).length);
         num_committers.push(Object.keys(runningCommitters).length);
+        num_maint_authors.push(Object.keys(runningMaintAuthors).length);
+        num_maint_extras.push(Object.keys(runningMaintExtras).length);
         
         for(attrTypeDict of Object.values(runningAttributions)){
             attrTypeDict['runningCount'].push(Object.keys(attrTypeDict['runningAuthors']).length)
@@ -233,7 +280,7 @@ function slidingWindowAuthors(commits, intervalLengthDays){
 
     }
 
-    return [date_points, num_authors ,num_committers, runningAttributions]
+    return [date_points, num_authors ,num_committers, runningAttributions,num_maint_authors,num_maint_extras]
 }
 
 // -----------------------------------------------------------------------------------
@@ -259,6 +306,7 @@ function getBranchData(){
     return branchData;
 }
 
+const LEFTDATAPOINTS = ["Authors","Commiters","Reviewed Bys","Commits","Maintainers Listed","Authoring Maintainers","Supporting Maintainers"];
 
 /**
  * Computes the sliding window data relative to the given list of commits.
@@ -282,6 +330,9 @@ async function computeBranchData(commitList){
         'Authors' : {'axisLabel': 'Contributions', 'data': contribs_results[1]},
         'Commiters' : {'axisLabel': 'Contributions', 'data': contribs_results[2]},
         'Reviewed Bys' : {'axisLabel': 'Contributions', 'data': attribData["reviewed-by"]["runningCount"]},
+        'Authoring Maintainers' : {'axisLabel': 'Contributions', 'data': contribs_results[4]},
+        'Supporting Maintainers' : {'axisLabel': 'Contributions', 'data': contribs_results[5]},
+        'Maintainers Listed' : {'axisLabel': 'Contributions', 'data': diffs_results[6]},
         'LoC Added' : {'axisLabel': 'LoC', 'data': diffs_results[1]},
         'LoC Removed' : {'axisLabel': 'LoC', 'data': diffs_results[2]},
         'LoC Net' : {'axisLabel': 'LoC', 'data': diffs_results[3]},
@@ -449,7 +500,6 @@ function loadExtraAttributions(commits){
     }
     return commits
 }
-const LEFTDATAPOINTS = ["Authors","Commiters","Reviewed Bys","Commits"];
 
 /**
  * Replots the graph once a given input is toggled.

@@ -12,7 +12,7 @@
         <h1>KTreezViz</h1>
     </header>
     <section class="flexRow">
-        <div id="plotDiv" style="width:80vw;height:80vh;"></div>
+        <div id="plotDiv" style="width:75vw;height:80vh;"></div>
         <div id="controls">
             <div>
                 <input type="checkbox" name="checkAuthors" onchange="replotOnToggle(this)" checked />
@@ -25,6 +25,19 @@
             <div>
                 <input type="checkbox" name="checkReviewed_Bys" onchange="replotOnToggle(this)" />
                 <label for="checkReviewd_Bys"> Reviewed-by's </label>
+            </div>
+            <br>
+            <div>
+                <input type="checkbox" name="checkMaintainers_Listed" onchange="replotOnToggle(this)" />
+                <label for="checkMaintainers_Listed"> Entries on MAINTEINERS file </label>
+            </div>
+            <div>
+                <input type="checkbox" name="checkAuthoring_Maintainers" onchange="replotOnToggle(this)" />
+                <label for="checkAuthoring_Maintainers"> Authoring Maintainers </label>
+            </div>
+            <div>
+                <input type="checkbox" name="checkSupporting_Maintainers" onchange="replotOnToggle(this)" />
+                <label for="checkSupporting_Maintainers"> Supporting Maintainers </label>
             </div>
             <br>
             <div>
@@ -59,10 +72,13 @@
                 <label for="checkCustom"> Plot Custom Ratio</label>
             </div>
             <div id="customRatioArea" style="display: none;">
-                <select name="overRatio" onchange="updateOver(this)">
+                <select name="overRatio" onchange="updateOver(this)">  
                     <option name="overAuthors">Authors</option>
                     <option name="overCommiters">Commiters</option>
                     <option name="overReviewed_Bys">Reviewed Bys</option>
+                    <option name="overMaintainers_Listed">Maintainers Listed</option>
+                    <option name="overAuthoring_Maintainers">Authoring Maintainers</option>
+                    <option name="overSupporting_Maintainers">Supporting Maintainers</option>
                     <option name="overCommits">Commits</option>
                     <option name="overLoC_Added">LoC Added</option>
                     <option name="overLoC_Removed">LoC Removed</option>
@@ -74,6 +90,9 @@
                     <option name="underAuthors">Authors</option>
                     <option name="underCommiters" selected>Commiters</option>
                     <option name="underReviewed_Bys">Reviewed Bys</option>
+                    <option name="underMaintainers_Listed">Maintainers Listed</option>
+                    <option name="underAuthoring_Maintainers">Authoring Maintainers</option>
+                    <option name="underSupporting_Maintainers">Supporting Maintainers</option>
                     <option name="underCommits">Commits</option>
                     <option name="underLoC_Added">LoC Added</option>
                     <option name="underLoC_Removed">LoC Removed</option>
