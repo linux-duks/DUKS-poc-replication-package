@@ -6,7 +6,7 @@ def load_by_commits(window_date_size=None):
 
     return df
 
-def load_data(window_date_size=14):
+def load_data(window_date_size=None):
     df = pl.read_parquet("../data/by_date.parquet")
 
     # only run windowing if requested

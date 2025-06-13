@@ -9,7 +9,7 @@
 </head>
 <body>
     <header>
-        <h1>KTreezViz</h1>
+        <h1>🦆 DUKS - Dashboard for Unified Kernel Statistics</h1>
     </header>
     <section class="flexRow">
         <div id="plotDiv" style="width:75vw;height:80vh;"></div>
@@ -98,6 +98,17 @@
                     <option name="underLoC_Removed">LoC Removed</option>
                     <option name="underLoC_Net">LoC Net</option>
                     <option name="underLoC_Changes">LoC Changes</option>
+                </select>
+            </div>
+            <br>
+            <div>
+                <label for="windowLen"> Sliding Window Length</label>
+                <select name="windowLen" onchange="updateWindowLen(this)">  
+                    <option id="window1">1 Day</option>
+                    <option id="window5">5 Days</option>
+                    <option id="window14" selected>2 Weeks</option>
+                    <option id="window30">1 Month</option>
+                    <option id="window365">1 Year</option>
                 </select>
             </div>
         </div>

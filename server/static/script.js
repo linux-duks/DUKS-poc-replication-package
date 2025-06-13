@@ -287,6 +287,8 @@ function slidingWindowAuthors(commits, intervalLengthDays){
 // Load Initial Data
 // -----------------------------------------------------------------------------------
 
+var collectedCommits;
+
 // Nothing like a good and old global variable
 var branchData = {
     'leftDataPoints': [], // keys from 'allData dict' shown in the left y axis
@@ -313,14 +315,12 @@ const LEFTDATAPOINTS = ["Authors","Commiters","Reviewed Bys","Commits","Maintain
  * Updates the global variable 'branchData' with the new data.
  * @param {*} commitList List of commits from the tree to be analyzed.
  */
-async function computeBranchData(commitList){
+async function computeBranchData(windowRadius=14){
 
-    WINDOW_RADIUS = 14
+    const commits = collectedCommits
 
-    commits = loadExtraAttributions(commitList)
-
-    const contribs_results = slidingWindowAuthors(commits,WINDOW_RADIUS)
-    const diffs_results = slidingWindowDiffs(commits,WINDOW_RADIUS)
+    const contribs_results = slidingWindowAuthors(commits,windowRadius)
+    const diffs_results = slidingWindowDiffs(commits,windowRadius)
 
     const dates = contribs_results[0];
     const tags = await getTagsIn(dates[0],dates[dates.length-1]);
@@ -583,5 +583,14 @@ function updateUnder(component){
     plot_figure();
 }
 
+function updateWindowLen(component){
 
-get_commits().then( (commits) => {computeBranchData(commits)})
+    const nextWindow = parseInt(component.selectedOptions[0].id.slice(6))
+
+   computeBranchData(nextWindow).then(
+    () => {plot_figure()}
+   )
+}
+
+
+get_commits().then( (commits) => {collectedCommits = loadExtraAttributions(commits);computeBranchData()})
