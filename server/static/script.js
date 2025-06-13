@@ -308,7 +308,7 @@ function getBranchData(){
     return branchData;
 }
 
-const LEFTDATAPOINTS = ["Authors","Commiters","Reviewed Bys","Commits","Maintainers Listed","Authoring Maintainers","Supporting Maintainers"];
+const LEFTDATAPOINTS = ["Authors","Committers","Reviewed Bys","Commits","Maintainers Listed","Authoring Maintainers","Supporting Maintainers"];
 
 /**
  * Computes the sliding window data relative to the given list of commits.
@@ -325,7 +325,7 @@ async function computeBranchData(windowRadius=14){
     const attribData = contribs_results[3];
     const allData = {
         'Authors' : {'axisLabel': 'Contributions', 'data': contribs_results[1]},
-        'Commiters' : {'axisLabel': 'Contributions', 'data': contribs_results[2]},
+        'Committers' : {'axisLabel': 'Contributions', 'data': contribs_results[2]},
         'Reviewed Bys' : {'axisLabel': 'Contributions', 'data': attribData["reviewed-by"]["runningCount"]},
         'Authoring Maintainers' : {'axisLabel': 'Contributions', 'data': contribs_results[4]},
         'Supporting Maintainers' : {'axisLabel': 'Contributions', 'data': contribs_results[5]},
@@ -345,14 +345,14 @@ async function computeBranchData(windowRadius=14){
         const tags = await getTagsIn(dates[0],dates[dates.length-1]);
 
         const newBranchData = {
-            'leftDataPoints': ['Authors','Commiters'],
+            'leftDataPoints': ['Authors','Committers'],
             'rightDataPoints':  ['LoC Net'],
             'allData': allData,
             'commitDates': dates,
             'tags' : tags,
             'showTags' : false,
             'overRatio' : 'LoC Changes',
-            'underRatio' : 'Commiters',
+            'underRatio' : 'Committers',
             'showRatio' : false
         };
         setBranchData(newBranchData);

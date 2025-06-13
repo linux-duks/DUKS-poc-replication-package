@@ -1,8 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8" />    
-    <title>KTreezViz</title>
+    <meta charset="UTF-8" />
+    <title>DUKS: Dashboard for Unified Kernel Statistics</title>
+	  <meta name="description" content="Analytical Dashboard of the Linux Kernel development cycles and its contributors">
+	  <meta name="keywords" content="Linux, Kernel, Open Surce, Analytical, Dashboard">
+	  <meta name="author" content="Rafael Passos <rafael@rcpassos.me>">
+	  <meta name="author" content="Arthur Pilone Maia da Silva <arthurpilone@usp.br>">
+	  <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="static/script.js"></script>
     <link rel="stylesheet" href="static/style.css">
@@ -19,12 +24,12 @@
                 <label for="checkAuthors"> Authors </label>
             </div>
             <div>
-                <input type="checkbox" name="checkCommiters" onchange="replotOnToggle(this)" checked />
-                <label for="checkCommiters"> Commiters </label>
+                <input type="checkbox" name="checkCommitters" onchange="replotOnToggle(this)" checked />
+                <label for="checkCommitters"> Committers </label>
             </div>
             <div>
                 <input type="checkbox" name="checkReviewed_Bys" onchange="replotOnToggle(this)" />
-                <label for="checkReviewd_Bys"> Reviewed-by's </label>
+                <label for="checkReviewed_Bys"> Reviewed-by's </label>
             </div>
             <br>
             <div>
@@ -74,7 +79,7 @@
             <div id="customRatioArea" style="display: none;">
                 <select name="overRatio" onchange="updateOver(this)">  
                     <option name="overAuthors">Authors</option>
-                    <option name="overCommiters">Commiters</option>
+                    <option name="overCommitters">Committers</option>
                     <option name="overReviewed_Bys">Reviewed Bys</option>
                     <option name="overMaintainers_Listed">Maintainers Listed</option>
                     <option name="overAuthoring_Maintainers">Authoring Maintainers</option>
@@ -88,7 +93,7 @@
                 <p style="text-align: center;">by</p>
                 <select name="underRatio" onchange="updateUnder(this)">
                     <option name="underAuthors">Authors</option>
-                    <option name="underCommiters" selected>Commiters</option>
+                    <option name="underCommitters" selected>Committers</option>
                     <option name="underReviewed_Bys">Reviewed Bys</option>
                     <option name="underMaintainers_Listed">Maintainers Listed</option>
                     <option name="underAuthoring_Maintainers">Authoring Maintainers</option>
