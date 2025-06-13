@@ -362,6 +362,17 @@ function plot_figure(){
 
     const xData = branchData['commitDates'];
 
+    const dummyTrace = {
+        x: [null], // Or any valid x-value, but make y null or empty
+        y: [null], // No data to display
+        type: 'scatter',
+        mode: 'lines', // Can be 'lines', 'markers', or 'none'
+        yaxis: 'y',
+        showlegend: false, // Don't show this dummy trace in the legend
+        hoverinfo: 'none', // Don't show hover info for this trace
+        visible: true // Ensure the trace is considered for layout calculations
+    }
+
     var data = [];
 
     let leftAxisLabel; // I'm supposing these labels don't change
@@ -378,6 +389,10 @@ function plot_figure(){
         leftAxisLabel = branchData['allData'][leftKey]['axisLabel'];
     }
 
+    if(branchData["leftDataPoints"].length == 0){
+        data.push(dummyTrace);
+    }
+    
     for(rightKey of branchData['rightDataPoints']){
         data.push({
             x: xData,
@@ -471,9 +486,9 @@ function plot_figure(){
             showgrid: false,
         },
         yaxis3: {
-            //title: "Ratio",
             overlaying: 'y',
-            //side: 'right',
+            side: 'left',
+            rangemode: 'tozero',
             anchor: 'x',
             zeroline: false,
             showgrid: false,
