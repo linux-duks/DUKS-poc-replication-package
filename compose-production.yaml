@@ -1,0 +1,31 @@
+name: kernelviz
+
+services:
+  api:
+    environment:
+      - DEBUG=false
+    build:
+      context: server/
+      dockerfile: Containerfile.prod
+    volumes:
+      - ./data/:/data:z
+    ports:
+      - 6000:6000
+    networks:
+      - app_network
+    command: gunicorn --chdir app app:app -w 4 --threads 4 -b "0.0.0.0:6000"
+
+  nginx:
+    image: docker.io/nginx:1.27-alpine
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./server/static:/www/data
+    depends_on:
+      - api
+    networks:
+      - app_network
+
+networks:
+  app_network:

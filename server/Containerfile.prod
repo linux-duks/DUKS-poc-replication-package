@@ -1,0 +1,40 @@
+# Use a lightweight official Python image
+FROM docker.io/python:3.12-slim as build
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Enable bytecode compilation
+# Copy from the cache instead of linking since it's a mounted volume
+ENV UV_LINK_MODE=copy \
+	UV_COMPILE_BYTECODE=1 
+
+# Sync the project into a new environment, asserting the lockfile is up to date
+WORKDIR /app
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+  --mount=type=bind,source=uv.lock,target=uv.lock \
+  --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+  uv sync --frozen --no-install-project --no-dev
+#
+# Then, add the rest of the project source code and install it
+# Installing separately from its dependencies allows optimal layer caching
+COPY . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+	uv sync --frozen --no-dev
+
+
+FROM docker.io/python:3.12-slim
+USER 1000
+
+COPY . /app
+COPY --from=build --chown=1000:1000 /app/.venv /app/.venv
+
+
+# Place executables in the environment at the front of the path
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Command to run the Flask application using gunicorn
+CMD ["gunicorn", "--chdir",  "app", "app:app", "-w", "2", "--threads", "2", "-b", "0.0.0.0:5000"]

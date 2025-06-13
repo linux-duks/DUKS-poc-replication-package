@@ -1,8 +1,8 @@
 async function get_commits(window_size=null){
 		if (window_size === null){
-			result = await fetch('commits')
+			result = await fetch('/api/commits')
 		} else{
-			result = await fetch(`commits?window_size=${window_size}`)
+			result = await fetch(`/api/commits?window_size=${window_size}`)
 		}
     json_commits = await result.json()
     
@@ -10,7 +10,7 @@ async function get_commits(window_size=null){
 }
 
 async function getTagsIn(begin,end){
-    result = await fetch("tags")
+    result = await fetch("/api/tags")
     jsonTags = await result.json()
     
     const selectedTags = []

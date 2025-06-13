@@ -21,7 +21,7 @@ def _build_cors_preflight_response():
     return response
 
 
-@app.route("/commits", methods=["GET"])
+@app.route("/api/commits", methods=["GET"])
 def get_commits():
     """
     Endpoint to serve the mock Git commit data.
@@ -46,7 +46,7 @@ def get_commits():
         )
 
 
-@app.route("/tags", methods=["GET"])
+@app.route("/api/tags", methods=["GET"])
 def get_tags():
     """
     Endpoint to serve the mock Git commit data.
