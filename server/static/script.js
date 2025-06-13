@@ -322,9 +322,6 @@ async function computeBranchData(windowRadius=14){
     const contribs_results = slidingWindowAuthors(commits,windowRadius)
     const diffs_results = slidingWindowDiffs(commits,windowRadius)
 
-    const dates = contribs_results[0];
-    const tags = await getTagsIn(dates[0],dates[dates.length-1]);
-
     const attribData = contribs_results[3];
     const allData = {
         'Authors' : {'axisLabel': 'Contributions', 'data': contribs_results[1]},
@@ -340,19 +337,30 @@ async function computeBranchData(windowRadius=14){
         'Commits' : {'axisLabel': 'Contributions', 'data': diffs_results[5]}
     }
 
-    const newBranchData = {
-        'leftDataPoints': ['Authors','Commiters'],
-        'rightDataPoints':  ['LoC Net'],
-        'allData': allData,
-        'commitDates': dates,
-        'tags' : tags,
-        'showTags' : false,
-        'overRatio' : 'LoC Changes',
-        'underRatio' : 'Commiters',
-        'showRatio' : false
-    };
+    const oldBranchData = getBranchData();
 
-    setBranchData(newBranchData);
+    if(oldBranchData.allData.length == 0){
+
+        const dates = contribs_results[0];
+        const tags = await getTagsIn(dates[0],dates[dates.length-1]);
+
+        const newBranchData = {
+            'leftDataPoints': ['Authors','Commiters'],
+            'rightDataPoints':  ['LoC Net'],
+            'allData': allData,
+            'commitDates': dates,
+            'tags' : tags,
+            'showTags' : false,
+            'overRatio' : 'LoC Changes',
+            'underRatio' : 'Commiters',
+            'showRatio' : false
+        };
+        setBranchData(newBranchData);
+    }else{
+        oldBranchData["allData"] = allData
+    }
+
+    
     plot_figure();
 }
 
