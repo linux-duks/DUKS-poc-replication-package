@@ -617,10 +617,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     showRatio: false
                 },
                 windowSize: '14',
-                collectedCommits: null
+                collectedCommits: null,
+                resizeTimeout: null
             }
         },
+        mounted() {
+            // Add resize event listener
+            window.addEventListener('resize', this.handleResize);
+        },
+        beforeUnmount() {
+            // Clean up resize event listener
+            window.removeEventListener('resize', this.handleResize);
+        },
         methods: {
+            handleResize() {
+                // Debounce resize events
+                if (this.resizeTimeout) {
+                    clearTimeout(this.resizeTimeout);
+                }
+                this.resizeTimeout = setTimeout(() => {
+                    const plotDiv = document.getElementById('plotDiv');
+                    if (plotDiv) {
+                        Plotly.Plots.resize(plotDiv);
+                    }
+                }, 250); // 250ms debounce
+            },
             replotOnToggle() {
                 this.plot_figure();
             },
