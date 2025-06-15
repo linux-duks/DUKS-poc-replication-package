@@ -8,116 +8,118 @@
 	  <meta name="author" content="Rafael Passos <rafael@rcpassos.me>">
 	  <meta name="author" content="Arthur Pilone Maia da Silva <arthurpilone@usp.br>">
 	  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="static/script.js"></script>
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
-    <header>
-        <h1>🦆 DUKS - Dashboard for Unified Kernel Statistics</h1>
-    </header>
-    <section class="flexRow">
-        <div id="plotDiv" style="width:75vw;height:80vh;"></div>
-        <div id="controls">
-            <div>
-                <input type="checkbox" name="checkAuthors" onchange="replotOnToggle(this)" checked />
-                <label for="checkAuthors"> Authors </label>
+    <div id="app">
+        <header>
+            <h1>🦆 DUKS - Dashboard for Unified Kernel Statistics</h1>
+        </header>
+        <section class="flexRow">
+            <div id="plotDiv" style="width:75vw;height:80vh;"></div>
+            <div id="controls">
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Authors" @change="replotOnToggle" />
+                    <label for="checkAuthors"> Authors </label>
+                </div>
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Committers" @change="replotOnToggle" />
+                    <label for="checkCommitters"> Committers </label>
+                </div>
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Reviewed Bys" @change="replotOnToggle" />
+                    <label for="checkReviewed_Bys"> Reviewed-by's </label>
+                </div>
+                <br>
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Maintainers Listed" @change="replotOnToggle" />
+                    <label for="checkMaintainers_Listed"> Entries on MAINTEINERS file </label>
+                </div>
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Authoring Maintainers" @change="replotOnToggle" />
+                    <label for="checkAuthoring_Maintainers"> Authoring Maintainers </label>
+                </div>
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Supporting Maintainers" @change="replotOnToggle" />
+                    <label for="checkSupporting_Maintainers"> Supporting Maintainers </label>
+                </div>
+                <br>
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Commits" @change="replotOnToggle" />
+                    <label for="checkCommits"> Commits </label>
+                </div>
+                <br>
+                <div>
+                    <input type="checkbox" v-model="branchData.rightDataPoints" value="LoC Added" @change="replotOnToggle" />
+                    <label for="checkLoC_Added"> LoC added </label> 
+                </div>
+                <div>
+                    <input type="checkbox" v-model="branchData.rightDataPoints" value="LoC Removed" @change="replotOnToggle" />
+                    <label for="checkLoC_Removed"> LoC removed </label>
+                </div>
+                <div>
+                    <input type="checkbox" v-model="branchData.rightDataPoints" value="LoC Changes" @change="replotOnToggle" />
+                    <label for="checkLoC_Changes"> LoC changed </label>
+                </div>
+                <div>
+                    <input type="checkbox" v-model="branchData.rightDataPoints" value="LoC Net" @change="replotOnToggle" />
+                    <label for="checkLoC_Net"> Net LoC flow </label>
+                </div>
+                <br>
+                <div>
+                    <input type="checkbox" v-model="branchData.showTags" @change="replotOnToggle" />
+                    <label for="checkTags"> Show Release Tags </label>
+                </div>
+                <br>
+                <div>
+                    <input type="checkbox" v-model="branchData.showRatio" @change="toggleCustomRatio" />
+                    <label for="checkCustom"> Plot Custom Ratio</label>
+                </div>
+                <div v-show="branchData.showRatio">
+                    <select v-model="branchData.overRatio" @change="updateOver">  
+                        <option value="Authors">Authors</option>
+                        <option value="Committers">Committers</option>
+                        <option value="Reviewed Bys">Reviewed Bys</option>
+                        <option value="Maintainers Listed">Maintainers Listed</option>
+                        <option value="Authoring Maintainers">Authoring Maintainers</option>
+                        <option value="Supporting Maintainers">Supporting Maintainers</option>
+                        <option value="Commits">Commits</option>
+                        <option value="LoC Added">LoC Added</option>
+                        <option value="LoC Removed">LoC Removed</option>
+                        <option value="LoC Net">LoC Net</option>
+                        <option value="LoC Changes">LoC Changes</option>
+                    </select>
+                    <p style="text-align: center;">by</p>
+                    <select v-model="branchData.underRatio" @change="updateUnder">
+                        <option value="Authors">Authors</option>
+                        <option value="Committers">Committers</option>
+                        <option value="Reviewed Bys">Reviewed Bys</option>
+                        <option value="Maintainers Listed">Maintainers Listed</option>
+                        <option value="Authoring Maintainers">Authoring Maintainers</option>
+                        <option value="Supporting Maintainers">Supporting Maintainers</option>
+                        <option value="Commits">Commits</option>
+                        <option value="LoC Added">LoC Added</option>
+                        <option value="LoC Removed">LoC Removed</option>
+                        <option value="LoC Net">LoC Net</option>
+                        <option value="LoC Changes">LoC Changes</option>
+                    </select>
+                </div>
+                <br>
+                <div>
+                    <label for="windowLen"> Sliding Window Length</label>
+                    <select v-model="windowSize" @change="updateWindowLen">  
+                        <option value="1">1 Day</option>
+                        <option value="5">5 Days</option>
+                        <option value="14">2 Weeks</option>
+                        <option value="30">1 Month</option>
+                        <option value="365">1 Year</option>
+                    </select>
+                </div>
             </div>
-            <div>
-                <input type="checkbox" name="checkCommitters" onchange="replotOnToggle(this)" checked />
-                <label for="checkCommitters"> Committers </label>
-            </div>
-            <div>
-                <input type="checkbox" name="checkReviewed_Bys" onchange="replotOnToggle(this)" />
-                <label for="checkReviewed_Bys"> Reviewed-by's </label>
-            </div>
-            <br>
-            <div>
-                <input type="checkbox" name="checkMaintainers_Listed" onchange="replotOnToggle(this)" />
-                <label for="checkMaintainers_Listed"> Entries on MAINTEINERS file </label>
-            </div>
-            <div>
-                <input type="checkbox" name="checkAuthoring_Maintainers" onchange="replotOnToggle(this)" />
-                <label for="checkAuthoring_Maintainers"> Authoring Maintainers </label>
-            </div>
-            <div>
-                <input type="checkbox" name="checkSupporting_Maintainers" onchange="replotOnToggle(this)" />
-                <label for="checkSupporting_Maintainers"> Supporting Maintainers </label>
-            </div>
-            <br>
-            <div>
-                <input type="checkbox" name="checkCommits" onchange="replotOnToggle(this)" />
-                <label for="checkCommits"> Commits </label>
-            </div>
-            <br>
-            <div>
-                <input type="checkbox" name="checkLoC_Added" onchange="replotOnToggle(this)" />
-                <label for="checkLoC_Added"> LoC added </label> 
-            </div>
-            <div>
-                <input type="checkbox" name="checkLoC_Removed" onchange="replotOnToggle(this)" />
-                <label for="checkLoC_Removed"> LoC removed </label>
-            </div>
-            <div>
-                <input type="checkbox" name="checkLoC_Changes" onchange="replotOnToggle(this)" />
-                <label for="checkLoC_Changes"> LoC changed </label>
-            </div>
-            <div>
-                <input type="checkbox" name="checkLoC_Net" onchange="replotOnToggle(this)" checked />
-                <label for="checkLoC_Net"> Net LoC flow </label>
-            </div>
-            <br>
-            <div>
-                <input type="checkbox" name="checkTags" onchange="replotOnToggle(this)" />
-                <label for="checkTags"> Show Release Tags </label>
-            </div>
-            <br>
-            <div>
-                <input id="checkCustom" type="checkbox" name="checkCustom" onchange="toggleCustomRatio()" />
-                <label for="checkCustom"> Plot Custom Ratio</label>
-            </div>
-            <div id="customRatioArea" style="display: none;">
-                <select name="overRatio" onchange="updateOver(this)">  
-                    <option name="overAuthors">Authors</option>
-                    <option name="overCommitters">Committers</option>
-                    <option name="overReviewed_Bys">Reviewed Bys</option>
-                    <option name="overMaintainers_Listed">Maintainers Listed</option>
-                    <option name="overAuthoring_Maintainers">Authoring Maintainers</option>
-                    <option name="overSupporting_Maintainers">Supporting Maintainers</option>
-                    <option name="overCommits">Commits</option>
-                    <option name="overLoC_Added">LoC Added</option>
-                    <option name="overLoC_Removed">LoC Removed</option>
-                    <option name="overLoC_Net">LoC Net</option>
-                    <option name="overLoC_Changes" selected>LoC Changes</option>
-                </select>
-                <p style="text-align: center;">by</p>
-                <select name="underRatio" onchange="updateUnder(this)">
-                    <option name="underAuthors">Authors</option>
-                    <option name="underCommitters" selected>Committers</option>
-                    <option name="underReviewed_Bys">Reviewed Bys</option>
-                    <option name="underMaintainers_Listed">Maintainers Listed</option>
-                    <option name="underAuthoring_Maintainers">Authoring Maintainers</option>
-                    <option name="underSupporting_Maintainers">Supporting Maintainers</option>
-                    <option name="underCommits">Commits</option>
-                    <option name="underLoC_Added">LoC Added</option>
-                    <option name="underLoC_Removed">LoC Removed</option>
-                    <option name="underLoC_Net">LoC Net</option>
-                    <option name="underLoC_Changes">LoC Changes</option>
-                </select>
-            </div>
-            <br>
-            <div>
-                <label for="windowLen"> Sliding Window Length</label>
-                <select name="windowLen" onchange="updateWindowLen(this)">  
-                    <option id="window1">1 Day</option>
-                    <option id="window5">5 Days</option>
-                    <option id="window14" selected>2 Weeks</option>
-                    <option id="window30">1 Month</option>
-                    <option id="window365">1 Year</option>
-                </select>
-            </div>
-        </div>
-    </section>
-
+        </section>
+    </div>
 </body>
 </html>
