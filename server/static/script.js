@@ -618,7 +618,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 windowSize: '14',
                 collectedCommits: null,
-                resizeTimeout: null
+                resizeTimeout: null,
+                isLoading: false
             }
         },
         mounted() {
@@ -661,13 +662,15 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             async initializeData() {
                 try {
+                    this.isLoading = true;
                     const commits = await get_commits();
                     this.collectedCommits = loadExtraAttributions(commits);
                     await this.computeBranchData();
-                    // Call plot_figure after data is initialized
-                    this.plot_figure();
+                    await this.plot_figure();
                 } catch (error) {
                     console.error('Error initializing data:', error);
+                } finally {
+                    this.isLoading = false;
                 }
             },
             async computeBranchData(windowRadius=14) {
@@ -713,175 +716,177 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.branchData.allData = allData;
                 }
             },
-            plot_figure() {
+            async plot_figure() {
+                this.isLoading = true;
                 // Wait for next tick to ensure DOM is ready
-                this.$nextTick(() => {
-                    try {
-                        const plotDiv = document.getElementById('plotDiv');
-                        if (!plotDiv) {
-                            console.error('Plot div not found');
-                            return;
-                        }
-
-                        const xData = this.branchData.commitDates;
-                        if (!xData || xData.length === 0) {
-                            console.error('No data available for plotting');
-                            return;
-                        }
-
-                        const dummyTrace = {
-                            x: [null],
-                            y: [null],
-                            type: 'scatter',
-                            mode: 'lines',
-                            yaxis: 'y',
-                            showlegend: false,
-                            hoverinfo: 'none',
-                            visible: true
-                        }
-
-                        var data = [];
-
-                        let leftAxisLabel;
-                        let rightAxisLabel;
-
-                        for(const leftKey of this.branchData.leftDataPoints) {
-                            if (!this.branchData.allData[leftKey]) {
-                                console.warn(`No data available for ${leftKey}`);
-                                continue;
-                            }
-                            data.push({
-                                x: xData,
-                                y: this.branchData.allData[leftKey]['data'],
-                                type: 'lines',
-                                yaxis: 'y',
-                                name: leftKey
-                            })
-                            leftAxisLabel = this.branchData.allData[leftKey]['axisLabel'];
-                        }
-
-                        if(this.branchData.leftDataPoints.length === 0) {
-                            data.push(dummyTrace);
-                        }
-                        
-                        for(const rightKey of this.branchData.rightDataPoints) {
-                            if (!this.branchData.allData[rightKey]) {
-                                console.warn(`No data available for ${rightKey}`);
-                                continue;
-                            }
-                            data.push({
-                                x: xData,
-                                y: this.branchData.allData[rightKey]['data'],
-                                type: 'lines',
-                                yaxis: 'y2',
-                                name: rightKey
-                            })
-                            rightAxisLabel = this.branchData.allData[rightKey]['axisLabel'];
-                        }
-
-                        const tagShapes = []
-                        const tagLabels = []
-
-                        if(this.branchData.showTags) {
-                            for(const datedTag of this.branchData.tags) {
-                                const tagDate = datedTag[0];
-                                
-                                const newShape = {
-                                    type: 'line',
-                                    x0: tagDate,
-                                    x1: tagDate,
-                                    y0: 0,
-                                    y1: 1,
-                                    xref: 'x',
-                                    yref: 'paper',
-                                    line: {color: 'skyBlue', width: 2, dash: 'dot' }
-                                };
-
-                                const newLabel = {
-                                    type: 'line',
-                                    x: tagDate,
-                                    y: 1.05,
-                                    xref: 'x',
-                                    yref: 'paper',
-                                    text: datedTag[1],
-                                    showarrow: false,
-                                    xanchor: 'center',
-                                    yanchor: 'bottom',
-                                    line: {color: 'skyBlue', width: 2, dash: 'dot' }
-                                }
-
-                                tagShapes.push(newShape);
-                                tagLabels.push(newLabel);
-                            }
-                        }
-
-                        if(this.branchData.showRatio) {
-                            const ratioValues = [];
-                            const overKey = this.branchData.overRatio;
-                            const underKey = this.branchData.underRatio;
-                            
-                            if (!this.branchData.allData[overKey] || !this.branchData.allData[underKey]) {
-                                console.warn('Missing data for ratio calculation');
-                            } else {
-                                for(let i in xData) {
-                                    const overVal = this.branchData.allData[overKey]['data'][i];
-                                    const underVal = this.branchData.allData[underKey]['data'][i];
-
-                                    if(underVal == 0) {
-                                        if(i > 0) {
-                                            ratioValues.push(ratioValues[i-1]);
-                                        } else {
-                                            ratioValues.push(0);
-                                        }
-                                    } else {
-                                        ratioValues.push(overVal/underVal);
-                                    }
-                                }
-
-                                data.push({
-                                    x: xData,
-                                    y: ratioValues,
-                                    type: 'lines',
-                                    yaxis: 'y3',
-                                    line: { color: 'red', width: 2, dash: 'dot' },
-                                    name: "Ratio " + overKey + " over " + underKey
-                                })
-                            }
-                        }
-
-                        var layout = {
-                            xaxis: {
-                                title: 'Date',
-                                type: 'date'
-                            },
-                            yaxis: {
-                                title: leftAxisLabel
-                            },
-                            yaxis2: {
-                                title: rightAxisLabel,
-                                overlaying: 'y',
-                                side: 'right',
-                                anchor: 'x',
-                                showgrid: false,
-                            },
-                            yaxis3: {
-                                overlaying: 'y',
-                                side: 'left',
-                                rangemode: 'tozero',
-                                anchor: 'x',
-                                zeroline: false,
-                                showgrid: false,
-                                showticklabels: false
-                            },
-                            shapes: tagShapes,
-                            annotations: tagLabels
-                        };
-
-                        Plotly.newPlot('plotDiv', data, layout);
-                    } catch (error) {
-                        console.error('Error plotting figure:', error);
+                await this.$nextTick();
+                try {
+                    const plotDiv = document.getElementById('plotDiv');
+                    if (!plotDiv) {
+                        console.error('Plot div not found');
+                        return;
                     }
-                });
+
+                    const xData = this.branchData.commitDates;
+                    if (!xData || xData.length === 0) {
+                        console.error('No data available for plotting');
+                        return;
+                    }
+
+                    const dummyTrace = {
+                        x: [null],
+                        y: [null],
+                        type: 'scatter',
+                        mode: 'lines',
+                        yaxis: 'y',
+                        showlegend: false,
+                        hoverinfo: 'none',
+                        visible: true
+                    }
+
+                    var data = [];
+
+                    let leftAxisLabel;
+                    let rightAxisLabel;
+
+                    for(const leftKey of this.branchData.leftDataPoints) {
+                        if (!this.branchData.allData[leftKey]) {
+                            console.warn(`No data available for ${leftKey}`);
+                            continue;
+                        }
+                        data.push({
+                            x: xData,
+                            y: this.branchData.allData[leftKey]['data'],
+                            type: 'lines',
+                            yaxis: 'y',
+                            name: leftKey
+                        })
+                        leftAxisLabel = this.branchData.allData[leftKey]['axisLabel'];
+                    }
+
+                    if(this.branchData.leftDataPoints.length === 0) {
+                        data.push(dummyTrace);
+                    }
+                    
+                    for(const rightKey of this.branchData.rightDataPoints) {
+                        if (!this.branchData.allData[rightKey]) {
+                            console.warn(`No data available for ${rightKey}`);
+                            continue;
+                        }
+                        data.push({
+                            x: xData,
+                            y: this.branchData.allData[rightKey]['data'],
+                            type: 'lines',
+                            yaxis: 'y2',
+                            name: rightKey
+                        })
+                        rightAxisLabel = this.branchData.allData[rightKey]['axisLabel'];
+                    }
+
+                    const tagShapes = []
+                    const tagLabels = []
+
+                    if(this.branchData.showTags) {
+                        for(const datedTag of this.branchData.tags) {
+                            const tagDate = datedTag[0];
+                            
+                            const newShape = {
+                                type: 'line',
+                                x0: tagDate,
+                                x1: tagDate,
+                                y0: 0,
+                                y1: 1,
+                                xref: 'x',
+                                yref: 'paper',
+                                line: {color: 'skyBlue', width: 2, dash: 'dot' }
+                            };
+
+                            const newLabel = {
+                                type: 'line',
+                                x: tagDate,
+                                y: 1.05,
+                                xref: 'x',
+                                yref: 'paper',
+                                text: datedTag[1],
+                                showarrow: false,
+                                xanchor: 'center',
+                                yanchor: 'bottom',
+                                line: {color: 'skyBlue', width: 2, dash: 'dot' }
+                            }
+
+                            tagShapes.push(newShape);
+                            tagLabels.push(newLabel);
+                        }
+                    }
+
+                    if(this.branchData.showRatio) {
+                        const ratioValues = [];
+                        const overKey = this.branchData.overRatio;
+                        const underKey = this.branchData.underRatio;
+                        
+                        if (!this.branchData.allData[overKey] || !this.branchData.allData[underKey]) {
+                            console.warn('Missing data for ratio calculation');
+                        } else {
+                            for(let i in xData) {
+                                const overVal = this.branchData.allData[overKey]['data'][i];
+                                const underVal = this.branchData.allData[underKey]['data'][i];
+
+                                if(underVal == 0) {
+                                    if(i > 0) {
+                                        ratioValues.push(ratioValues[i-1]);
+                                    } else {
+                                        ratioValues.push(0);
+                                    }
+                                } else {
+                                    ratioValues.push(overVal/underVal);
+                                }
+                            }
+
+                            data.push({
+                                x: xData,
+                                y: ratioValues,
+                                type: 'lines',
+                                yaxis: 'y3',
+                                line: { color: 'red', width: 2, dash: 'dot' },
+                                name: "Ratio " + overKey + " over " + underKey
+                            })
+                        }
+                    }
+
+                    var layout = {
+                        xaxis: {
+                            title: 'Date',
+                            type: 'date'
+                        },
+                        yaxis: {
+                            title: leftAxisLabel
+                        },
+                        yaxis2: {
+                            title: rightAxisLabel,
+                            overlaying: 'y',
+                            side: 'right',
+                            anchor: 'x',
+                            showgrid: false,
+                        },
+                        yaxis3: {
+                            overlaying: 'y',
+                            side: 'left',
+                            rangemode: 'tozero',
+                            anchor: 'x',
+                            zeroline: false,
+                            showgrid: false,
+                            showticklabels: false
+                        },
+                        shapes: tagShapes,
+                        annotations: tagLabels
+                    };
+
+                    await Plotly.newPlot('plotDiv', data, layout);
+                } catch (error) {
+                    console.error('Error plotting figure:', error);
+                } finally {
+                    this.isLoading = false;
+                }
             }
         }
     });
