@@ -468,8 +468,8 @@ document.addEventListener('DOMContentLoaded', () => {
             async initializeData() {
                 try {
                     this.isLoading = true;
-                    const commits = await get_commits();
-                    const tags = await getTags();
+                    // get commits and tags in parallel
+                    const [commits, tags] = await Promise.all([get_commits(), getTags()]);
                     this.collectedTags = tags;
                     this.collectedCommits = loadExtraAttributions(commits);
                     await this.computeBranchData();
