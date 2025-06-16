@@ -9,13 +9,18 @@ async function get_commits(window_size=null){
     return json_commits
 }
 
-async function getTagsIn(begin,end){
+async function getTags(){
     result = await fetch("/api/tags")
     jsonTags = await result.json()
+    return jsonTags
+}
+
+function getTagsIn(collectedTags, begin,end){
+
     
     const selectedTags = []
 
-    for(tag of jsonTags){
+    for(tag of collectedTags){
         if(tag["date"] == ""){
             continue;
         }
@@ -311,207 +316,6 @@ function getBranchData(){
 const LEFTDATAPOINTS = ["Authors","Committers","Reviewed Bys","Commits","Maintainers Listed","Authoring Maintainers","Supporting Maintainers"];
 
 /**
- * Computes the sliding window data relative to the given list of commits.
- * Updates the global variable 'branchData' with the new data.
- * @param {*} commitList List of commits from the tree to be analyzed.
- */
-async function computeBranchData(windowRadius=14){
-
-    const commits = collectedCommits
-
-    const contribs_results = slidingWindowAuthors(commits,windowRadius)
-    const diffs_results = slidingWindowDiffs(commits,windowRadius)
-
-    const attribData = contribs_results[3];
-    const allData = {
-        'Authors' : {'axisLabel': 'Contributions', 'data': contribs_results[1]},
-        'Committers' : {'axisLabel': 'Contributions', 'data': contribs_results[2]},
-        'Reviewed Bys' : {'axisLabel': 'Contributions', 'data': attribData["reviewed-by"]["runningCount"]},
-        'Authoring Maintainers' : {'axisLabel': 'Contributions', 'data': contribs_results[4]},
-        'Supporting Maintainers' : {'axisLabel': 'Contributions', 'data': contribs_results[5]},
-        'Maintainers Listed' : {'axisLabel': 'Contributions', 'data': diffs_results[6]},
-        'LoC Added' : {'axisLabel': 'LoC', 'data': diffs_results[1]},
-        'LoC Removed' : {'axisLabel': 'LoC', 'data': diffs_results[2]},
-        'LoC Net' : {'axisLabel': 'LoC', 'data': diffs_results[3]},
-        'LoC Changes' :  {'axisLabel': 'LoC', 'data': diffs_results[4]},
-        'Commits' : {'axisLabel': 'Contributions', 'data': diffs_results[5]}
-    }
-
-    const oldBranchData = getBranchData();
-
-    if(oldBranchData.allData.length == 0){
-
-        const dates = contribs_results[0];
-        const tags = await getTagsIn(dates[0],dates[dates.length-1]);
-
-        const newBranchData = {
-            'leftDataPoints': ['Authors','Committers'],
-            'rightDataPoints':  ['LoC Net'],
-            'allData': allData,
-            'commitDates': dates,
-            'tags' : tags,
-            'showTags' : false,
-            'overRatio' : 'LoC Changes',
-            'underRatio' : 'Committers',
-            'showRatio' : false
-        };
-        setBranchData(newBranchData);
-    }else{
-        oldBranchData["allData"] = allData
-    }
-
-    
-    plot_figure();
-}
-
-function plot_figure(){
-
-    const branchData = getBranchData()
-
-    const xData = branchData['commitDates'];
-
-    const dummyTrace = {
-        x: [null], // Or any valid x-value, but make y null or empty
-        y: [null], // No data to display
-        type: 'scatter',
-        mode: 'lines', // Can be 'lines', 'markers', or 'none'
-        yaxis: 'y',
-        showlegend: false, // Don't show this dummy trace in the legend
-        hoverinfo: 'none', // Don't show hover info for this trace
-        visible: true // Ensure the trace is considered for layout calculations
-    }
-
-    var data = [];
-
-    let leftAxisLabel; // I'm supposing these labels don't change
-    let rightAxisLabel;
-
-    for(leftKey of branchData['leftDataPoints']){
-        data.push({
-            x: xData,
-            y: branchData['allData'][leftKey]['data'],
-            type: 'lines',
-            yaxis: 'y',
-            name: leftKey
-        })
-        leftAxisLabel = branchData['allData'][leftKey]['axisLabel'];
-    }
-
-    if(branchData["leftDataPoints"].length == 0){
-        data.push(dummyTrace);
-    }
-    
-    for(rightKey of branchData['rightDataPoints']){
-        data.push({
-            x: xData,
-            y: branchData['allData'][rightKey]['data'],
-            type: 'lines',
-            yaxis: 'y2',
-            name: rightKey
-        })
-        rightAxisLabel = branchData['allData'][rightKey]['axisLabel'];
-    }
-
-    const tagShapes = []
-    const tagLabels = []
-
-    if(branchData["showTags"]){
-        for(datedTag of branchData["tags"]){
-            const tagDate = datedTag[0];
-            
-            const newShape = {
-                type: 'line',
-                x0: tagDate,
-                x1: tagDate,
-                y0: 0,
-                y1: 1,
-                xref: 'x',
-                yref: 'paper',
-                line: {color: 'skyBlue', width: 2, dash: 'dot' }
-            };
-
-            const newLabel = {
-                type: 'line',
-                x: tagDate,
-                y: 1.05,
-                xref: 'x',
-                yref: 'paper',
-                text: datedTag[1],
-                showarrow: false,
-                xanchor: 'center',
-                yanchor: 'bottom',
-                line: {color: 'skyBlue', width: 2, dash: 'dot' }
-            }
-
-            tagShapes.push(newShape);
-            tagLabels.push(newLabel);
-        }
-    }
-
-    if(branchData["showRatio"]){
-        const ratioValues = [];
-        const overKey = branchData['overRatio'];
-        const underKey = branchData['underRatio'];
-        for(i in xData){
-            const overVal = branchData['allData'][overKey]['data'][i];
-            const underVal = branchData['allData'][underKey]['data'][i];
-
-            if(underVal == 0){
-                if(i > 0){
-                    ratioValues.push(ratioValues[i-1]);
-                }else{
-                    ratioValues.push(0);
-                }
-            }else{
-                ratioValues.push(overVal/underVal);
-            }
-
-        }
-
-        data.push({
-            x: xData,
-            y: ratioValues,
-            type: 'lines',
-            yaxis: 'y3',
-            line: { color: 'red', width: 2, dash: 'dot' },
-            name: "Ratio " + overKey + " over " + underKey
-        })
-    }
-
-    var layout = {
-        xaxis: {
-            title: 'Date',
-            type: 'date'
-        },
-        yaxis: {
-            title: leftAxisLabel
-        },
-        yaxis2: {
-            title: rightAxisLabel,
-            overlaying: 'y',
-            side: 'right',
-            anchor: 'x',
-            showgrid: false,
-        },
-        yaxis3: {
-            overlaying: 'y',
-            side: 'left',
-            rangemode: 'tozero',
-            anchor: 'x',
-            zeroline: false,
-            showgrid: false,
-            showticklabels: false
-        },
-        shapes: tagShapes,
-        annotations: tagLabels
-    };
-
-    Plotly.newPlot('plotDiv', data, layout);
-
-}
-
-
-/**
  * Parses the 'attributions' field of every commit object of a list
  * into a json object.
  * @param {*} commits 
@@ -618,6 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 windowSize: '14',
                 collectedCommits: null,
+                collectedTags: null,
                 resizeTimeout: null,
                 isLoading: false
             }
@@ -664,6 +469,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     this.isLoading = true;
                     const commits = await get_commits();
+                    const tags = await getTags();
+                    this.collectedTags = tags;
                     this.collectedCommits = loadExtraAttributions(commits);
                     await this.computeBranchData();
                     await this.plot_figure();
@@ -673,6 +480,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.isLoading = false;
                 }
             },
+            // /**
+            //  * Computes the sliding window data relative to the given list of commits.
+            //  * Updates the global variable 'branchData' with the new data.
+            //  * @param {*} commitList List of commits from the tree to be analyzed.
+            //  */
             async computeBranchData(windowRadius=14) {
                 if (!this.collectedCommits) {
                     console.error('Commits not initialized');
@@ -699,14 +511,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if(Object.keys(this.branchData.allData).length === 0) {
                     const dates = contribs_results[0];
-                    const tags = await getTagsIn(dates[0], dates[dates.length-1]);
-
+                    
                     this.branchData = {
                         leftDataPoints: ['Authors','Committers'],
                         rightDataPoints: ['LoC Net'],
                         allData: allData,
                         commitDates: dates,
-                        tags: tags,
+                        tags: getTagsIn(this.collectedTags, dates[0], dates[dates.length-1]),
                         showTags: false,
                         overRatio: 'LoC Changes',
                         underRatio: 'Committers',
