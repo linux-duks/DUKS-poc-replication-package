@@ -37,7 +37,7 @@ def get_commits():
         app.logger.info("GET commits with window: %s", window_size)
 
         data = load_data(window_date_size=window_size)
-        response = jsonify(data.to_dicts())
+        response = jsonify(data.to_dict(as_series=False))
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
     else:
