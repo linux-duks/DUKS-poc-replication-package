@@ -24,15 +24,15 @@ def _build_cors_preflight_response():
 @app.route("/api/commits", methods=["GET"])
 def get_commits():
     """
-    Endpoint to serve the mock Git commit data.
+    Endpoint to serve the Git commit data.
     """
-    # Convert DataFrame to a list of dictionaries (records)
-    # This is a common way to serialize DataFrames for JSON API responses.
     if request.method == "OPTIONS":  # CORS preflight
         return _build_cors_preflight_response()
     elif request.method == "GET":
         # date_window_size, off by default
-        window_size = request.args.get("window_size", None)
+        window_size = request.args.get("window_size", "1d")
+        if "d" not in window_size:
+            window_size = window_size + "d"
 
         app.logger.info("GET commits with window: %s", window_size)
 
@@ -49,10 +49,8 @@ def get_commits():
 @app.route("/api/tags", methods=["GET"])
 def get_tags():
     """
-    Endpoint to serve the mock Git commit data.
+    Endpoint to serve tag data.
     """
-    # Convert DataFrame to a list of dictionaries (records)
-    # This is a common way to serialize DataFrames for JSON API responses.
     if request.method == "OPTIONS":  # CORS preflight
         return _build_cors_preflight_response()
     elif request.method == "GET":
