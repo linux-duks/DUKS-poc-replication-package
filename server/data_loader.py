@@ -6,35 +6,69 @@ def load_by_commits(window_date_size=None):
 
     return df
 
-def load_data(window_date_size=None):
-    df = pl.read_parquet("../data/by_date.parquet")
 
-    # only run windowing if requested
-    if window_date_size:
-        # count number of unique authors over the windw_date_size period
-        df = df.with_columns(
-            # committers
-            df.rolling(index_column="committer_date", period=window_date_size).agg(
-                pl.n_unique("author").alias("unique_authors")
-            )
-        )
+# short-hand for appliying the rolling_count
+def rolling_count_row_of_lists(
+    series: pl.Series, index_column: str, period: str
+) -> pl.Series:
+    return series.flatten().drop_nulls().n_unique().rolling(index_column=index_column, period=period)
 
-        # count number of unique committer over the windw_date_size period
-        df = df.with_columns(
+
+def load_data(window_date_size="1d"):
+    df = pl.read_parquet("../data/by_date.parquet").lazy()
+
+    if window_date_size is None:
+        window_date_size = "1d"
+
+    # count number of total contributors over the windw_date_size period
+    df = df.with_columns(
+        [
+            # all_contributors
+            rolling_count_row_of_lists(
+                pl.col("all_contributors"), "committer_date", window_date_size
+            ).alias("rolling_count_contributors"),
             # authors
-            df.rolling(index_column="committer_date", period=window_date_size).agg(
-                pl.n_unique("committer").alias("unique_committer")
-            ),
-        )
+            rolling_count_row_of_lists(
+                pl.col("author"), "committer_date", window_date_size
+            ).alias("rolling_count_authors"),
+            # committer
+            rolling_count_row_of_lists(
+                pl.col("committer"), "committer_date", window_date_size
+            ).alias("rolling_count_committers"),
+            # extra_contributors (not author nor committer)
+            rolling_count_row_of_lists(
+                pl.col("extra_contributors"), "committer_date", window_date_size
+            ).alias("rolling_count_extra_contributors"),
+            rolling_count_row_of_lists(
+                pl.col("attributions_ack"), "committer_date", window_date_size
+            ).alias("attributions_ack"),
+            rolling_count_row_of_lists(
+                pl.col("attributions_reviewed"), "committer_date", window_date_size
+            ).alias("attributions_reviewed"),
+            rolling_count_row_of_lists(
+                pl.col("attributions_reporetd"), "committer_date", window_date_size
+            ).alias("attributions_reporetd"),
+            rolling_count_row_of_lists(
+                pl.col("attributions_suggested"), "committer_date", window_date_size
+            ).alias("attributions_suggested"),
+            rolling_count_row_of_lists(
+                pl.col("attributions_tested"), "committer_date", window_date_size
+            ).alias("attributions_tested"),
+        ]
+    )
 
-        # count number of total contributors over the windw_date_size period
-        df = df.with_columns(
-            df.rolling(index_column="committer_date", period=window_date_size).agg(
-                pl.n_unique("all_contributors").alias("unique_contributors")
-            ),
-        )
-
-    return df
+    # remove email lists to keep only counts
+    df = df.drop(
+        "all_contributors",
+        "author",
+        "author_in_maintainers_file",
+        "attributions",
+        "committer",
+        "committer_in_maintainers_file",
+        "extra_attributions_in_maintainers_file",
+        "extra_contributors",
+    )
+    return df.collect()
 
 
 # TODO: there are missing tags
@@ -51,8 +85,12 @@ def load_tags():
 
 # main used only to test locally, executing this script directly
 if __name__ == "__main__":
+    import orjson
+
     print()
-    data = load_data()
+    # data = load_tags()
+    data = load_data("14d")
     print(data)
+    data.write_ndjson("demo.ndjson")
     print(data.columns)
-    # print(data.head().to_dict())
+    print(orjson.dumps(data.tail(100).to_dict(as_series=False)).decode())
