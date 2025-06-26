@@ -76,53 +76,43 @@ def run():
 
     # all commits before a change have the same declared contributors
     df = df.with_columns(
-        [
-            pl.col("maintainers").fill_null(strategy="backward"),
-            pl.col("declared_maintainers").fill_null(strategy="backward"),
-        ]
+        pl.col("maintainers").fill_null(strategy="backward"),
+        pl.col("declared_maintainers").fill_null(strategy="backward"),
     )
     # does the same, but fixing the tail end of the df
     df = df.with_columns(
-        [
-            pl.col("maintainers").fill_null(strategy="forward"),
-            pl.col("declared_maintainers").fill_null(strategy="forward"),
-        ]
+        pl.col("maintainers").fill_null(strategy="forward"),
+        pl.col("declared_maintainers").fill_null(strategy="forward"),
     )
 
     # add column with unique contributors in commit
     df = df.with_columns(
-        [
-            pl.col("attributions")
-            .map_elements(
-                unique_emails_in_attributions, return_dtype=pl.List(pl.String)
-            )
-            .alias("extra_contributors")
-        ]
+        pl.col("attributions")
+        .map_elements(unique_emails_in_attributions, return_dtype=pl.List(pl.String))
+        .alias("extra_contributors")
     )
 
     # add column with extra_contributors concated with author and committer
     df = df.with_columns(
-        [
-            pl.concat_list("author", "committer", "extra_contributors").alias(
-                "all_contributors"
-            )
-        ]
+        pl.concat_list("author", "committer", "extra_contributors").alias(
+            "all_contributors"
+        )
     )
 
     # in case author and committer are the same, filter uniqueness again
     df = df.with_columns(
-        [pl.col("all_contributors").list.unique().alias("all_contributors")]
+        pl.col("all_contributors").list.unique().alias("all_contributors")
     )
 
     # counts extra contributors in commit
-    df = df.with_columns(
-        pl.col("extra_contributors").list.len().alias("num_extra_contributors"),
-    )
+    # df = df.with_columns(
+    #     pl.col("extra_contributors").list.len().alias("num_extra_contributors"),
+    # )
 
     # count all contributors in each commit
-    df = df.with_columns(
-        pl.col("all_contributors").list.len().alias("num_total_contributors"),
-    )
+    # df = df.with_columns(
+    #     pl.col("all_contributors").list.len().alias("num_total_contributors"),
+    # )
 
     def intersect(row: pl.Struct):
         mset = set(row["maintainers"])
@@ -157,10 +147,65 @@ def run():
         .alias("intersect")
     ).unnest("intersect")
 
+    def parse_known_tags_from_attributions(row: pl.List(pl.Struct)) -> pl.Struct:
+        ack = set()
+        reviewed = set()  # Reveiwed, reviwed
+        reported = set()
+        suggested = set()  # Suggested-by, and also typos like Sugessted-by
+        tested = set()
+        # Co-authored
+        # Co-developed
+        #
+        # there are mixed cases, like: "Reported-and-reviwed-by"
+
+        for item in row:
+            contrib_type = item["type"].lower()
+            email = item["email"]
+            if email is not None:
+                if "ack" in contrib_type:
+                    ack.add(email)
+                elif "revi" in contrib_type:
+                    reviewed.add(email)
+                elif "report" in contrib_type:
+                    reported.add(email)
+                elif "test" in contrib_type:
+                    tested.add(email)
+                elif "sug" in contrib_type:
+                    suggested.add(email)
+
+        ack = list(ack)
+        reviewed = list(reviewed)
+        reported = list(reported)
+        suggested = list(suggested)
+        tested = list(tested)
+
+        # return {
+        obj = {
+            "attributions_ack": ack if len(ack) > 0 else None,
+            "attributions_reviewed": reviewed if len(reviewed) > 0 else None,
+            "attributions_reporetd": reported if len(reported) > 0 else None,
+            "attributions_suggested": suggested if len(suggested) > 0 else None,
+            "attributions_tested": tested if len(tested) > 0 else None,
+        }
+        # print(obj)
+        return obj
+
+    df = df.with_columns(
+        pl.col("attributions")
+        .str.json_decode(
+            dtype=pl.List(
+                pl.Struct({"type": pl.String, "name": pl.String, "email": pl.String})
+            )
+        )
+        .map_elements(
+            lambda s: parse_known_tags_from_attributions(s),
+            return_dtype=pl.Struct,
+        )
+        .alias("attributions_list")
+    ).unnest("attributions_list")
+
     logging.info("collecting polars operations")
     df = df.collect()
-    print(df.head())
-    print(df.columns)
 
     df = df.sort("committer_date", descending=False)
 
@@ -207,15 +252,14 @@ def run():
         pl.col("committer_in_maintainers_file").unique(),
         # extra_attributions_in_maintainers_file
         pl.col("extra_attributions_in_maintainers_file").flatten().unique(),
+        pl.col("attributions_ack").drop_nulls().flatten().unique(),
+        pl.col("attributions_reviewed").drop_nulls().flatten().unique(),
+        pl.col("attributions_reporetd").drop_nulls().flatten().unique(),
+        pl.col("attributions_suggested").drop_nulls().flatten().unique(),
+        pl.col("attributions_tested").drop_nulls().flatten().unique(),
     )
 
     df = df.sort("committer_date", descending=False)
-    # collect here, next rolling operations are not available in the lazy frame
-    logging.info("collecting grouped df")
-    df = df.collect()
-    logging.info("collected")
-    logging.info(df)
-    logging.info(df.columns)
 
     df = df.with_columns(
         [
@@ -238,6 +282,16 @@ def run():
         ]
     )
 
+    df = df.with_columns(
+        total_line_change=pl.sum_horizontal("insertions", "deletions"),
+        net_line_change=pl.col("insertions").sub(pl.col("deletions")),
+    )
+
+    logging.info("collecting grouped df")
+    df = df.collect()
+    logging.info("collected")
+
+    # collect here, upsample operations are not available in the lazy frame
     # fill non existing dates with null values
     df = df.upsample(time_column="committer_date", every="1d")
 
@@ -257,13 +311,20 @@ def run():
             pl.col("deletions").fill_null(strategy="zero"),
             pl.col("tag").fill_null(strategy="zero"),
             pl.col("extra_contributors").fill_null(value=[]),
-            pl.col("attributions").fill_null(value="[]"),
+            # pl.col("attributions").fill_null(value="[]"),
             pl.col("author").fill_null(value=[]),
             pl.col("committer").fill_null(value=[]),
             pl.col("all_contributors").fill_null(value=[]),
             pl.col("author_in_maintainers_file").fill_null(value=[]),
             pl.col("committer_in_maintainers_file").fill_null(value=[]),
             pl.col("extra_attributions_in_maintainers_file").fill_null(value=[]),
+            pl.col("net_line_change").fill_null(value=0),
+            pl.col("total_line_change").fill_null(value=0),
+            pl.col("attributions_ack").fill_null(value=[]),
+            pl.col("attributions_reviewed").fill_null(value=[]),
+            pl.col("attributions_reporetd").fill_null(value=[]),
+            pl.col("attributions_suggested").fill_null(value=[]),
+            pl.col("attributions_tested").fill_null(value=[]),
         ]
     )
 
