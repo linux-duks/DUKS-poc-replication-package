@@ -183,7 +183,7 @@ def run():
         obj = {
             "attributions_ack": ack if len(ack) > 0 else None,
             "attributions_reviewed": reviewed if len(reviewed) > 0 else None,
-            "attributions_reporetd": reported if len(reported) > 0 else None,
+            "attributions_reported": reported if len(reported) > 0 else None,
             "attributions_suggested": suggested if len(suggested) > 0 else None,
             "attributions_tested": tested if len(tested) > 0 else None,
         }
@@ -254,7 +254,7 @@ def run():
         pl.col("extra_attributions_in_maintainers_file").flatten().unique(),
         pl.col("attributions_ack").drop_nulls().flatten().unique(),
         pl.col("attributions_reviewed").drop_nulls().flatten().unique(),
-        pl.col("attributions_reporetd").drop_nulls().flatten().unique(),
+        pl.col("attributions_reported").drop_nulls().flatten().unique(),
         pl.col("attributions_suggested").drop_nulls().flatten().unique(),
         pl.col("attributions_tested").drop_nulls().flatten().unique(),
     )
@@ -322,7 +322,7 @@ def run():
             pl.col("total_line_change").fill_null(value=0),
             pl.col("attributions_ack").fill_null(value=[]),
             pl.col("attributions_reviewed").fill_null(value=[]),
-            pl.col("attributions_reporetd").fill_null(value=[]),
+            pl.col("attributions_reported").fill_null(value=[]),
             pl.col("attributions_suggested").fill_null(value=[]),
             pl.col("attributions_tested").fill_null(value=[]),
         ]
