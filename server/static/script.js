@@ -17,8 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
         data() {
             return {
                 branchData: {
-                    leftDataPoints: ['Authors', 'Committers'],
-                    rightDataPoints: ['LoC Net'],
+                    leftDataPoints: [],
+                    rightDataPoints: [],
                     allData: {},
                     commitDates: [],
                     tags: [],
@@ -142,8 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Reported Bys': {'axisLabel': 'Contributions', 'data': this.collectedCommits["attributions_reporetd"]},
                     "ACK'd Bys": {'axisLabel': 'Contributions', 'data': this.collectedCommits["attributions_ack"]},
                     'Authoring Maintainers': {'axisLabel': 'Contributions', 'data': this.collectedCommits["rolling_count_contributors"]},
-										// TODO: fix this metric
-                    'Supporting Maintainers': {'axisLabel': 'Contributions', 'data': this.collectedCommits["attributions_ack"]},
+                    'Supporting Maintainers': {'axisLabel': 'Contributions', 'data': this.collectedCommits["rolling_count_extra_contributors"]},
                 };
 
 								let dates = this.collectedCommits["committer_date"];

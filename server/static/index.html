@@ -52,6 +52,7 @@
                 <div id="plotDiv" style="width:100%;height:100%;"></div>
             </div>
             <div id="controls">
+								Rollable Values
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Authors" @change="replotOnToggle" />
                     <label for="checkAuthors"> Authors </label>
@@ -66,9 +67,25 @@
                 </div>
                 <br>
                 <div>
-                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Maintainers Listed" @change="replotOnToggle" />
-                    <label for="checkMaintainers_Listed"> Entries on MAINTEINERS file </label>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Tested Bys" @change="replotOnToggle" />
+                    <label for="checkTested_Bys"> Tested-by's </label>
                 </div>
+                <br>
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Suggested Bys" @change="replotOnToggle" />
+                    <label for="checkSuggested_Bys"> Suggested-by's </label>
+                </div>
+                <br>
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Reported Bys" @change="replotOnToggle" />
+                    <label for="checkReported_Bys"> Reported-by's </label>
+                </div>
+                <br>
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="ACK'd Bys" @change="replotOnToggle" />
+                    <label for="checkACKd_Bys"> ACK'd-by's </label>
+                </div>
+                <br>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Authoring Maintainers" @change="replotOnToggle" />
                     <label for="checkAuthoring_Maintainers"> Authoring Maintainers </label>
@@ -78,6 +95,24 @@
                     <label for="checkSupporting_Maintainers"> Supporting Maintainers </label>
                 </div>
                 <br>
+                <div>
+                    <label for="windowLen"> Sliding Window Length</label>
+                    <select v-model="windowSize" @change="updateWindowLen">  
+                        <option value="1">1 Day</option>
+                        <option value="5">5 Days</option>
+                        <option value="14">2 Weeks</option>
+                        <option value="30">1 Month</option>
+                        <option value="60">2 Months</option>
+                        <option value="120">4 Months</option>
+                        <option value="365">1 Year</option>
+                    </select>
+                </div>
+								Absolute Values
+                <br>
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Maintainers Listed" @change="replotOnToggle" />
+                    <label for="checkMaintainers_Listed"> Entries on MAINTEINERS file </label>
+                </div>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Commits" @change="replotOnToggle" />
                     <label for="checkCommits"> Commits </label>
@@ -136,17 +171,6 @@
                         <option value="LoC Removed">LoC Removed</option>
                         <option value="LoC Net">LoC Net</option>
                         <option value="LoC Changes">LoC Changes</option>
-                    </select>
-                </div>
-                <br>
-                <div>
-                    <label for="windowLen"> Sliding Window Length</label>
-                    <select v-model="windowSize" @change="updateWindowLen">  
-                        <option value="1">1 Day</option>
-                        <option value="5">5 Days</option>
-                        <option value="14">2 Weeks</option>
-                        <option value="30">1 Month</option>
-                        <option value="365">1 Year</option>
                     </select>
                 </div>
             </div>
