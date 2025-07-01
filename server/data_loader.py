@@ -44,18 +44,23 @@ def load_data(window_date_size="1d"):
             rolling_count_row_of_lists(
                 pl.col("extra_contributors"), "committer_date", window_date_size
             ).alias("rolling_count_extra_contributors"),
+            # emails mentioned as ack
             rolling_count_row_of_lists(
                 pl.col("attributions_ack"), "committer_date", window_date_size
             ).alias("attributions_ack"),
+            # emails mentioned as reviewers
             rolling_count_row_of_lists(
                 pl.col("attributions_reviewed"), "committer_date", window_date_size
             ).alias("attributions_reviewed"),
+            # reporters
             rolling_count_row_of_lists(
                 pl.col("attributions_reported"), "committer_date", window_date_size
             ).alias("attributions_reported"),
+            # suggestions
             rolling_count_row_of_lists(
                 pl.col("attributions_suggested"), "committer_date", window_date_size
             ).alias("attributions_suggested"),
+            # testers
             rolling_count_row_of_lists(
                 pl.col("attributions_tested"), "committer_date", window_date_size
             ).alias("attributions_tested"),
