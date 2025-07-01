@@ -3,43 +3,17 @@
 <head>
     <meta charset="UTF-8" />
     <title>DUKS: Dashboard for Unified Kernel Statistics</title>
-	  <meta name="description" content="Analytical Dashboard of the Linux Kernel development cycles and its contributors">
-	  <meta name="keywords" content="Linux, Kernel, Open Surce, Analytical, Dashboard">
-	  <meta name="author" content="Rafael Passos <rafael@rcpassos.me>">
-	  <meta name="author" content="Arthur Pilone Maia da Silva <arthurpilone@usp.br>">
-	  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+		<meta name="description" content="Analytical Dashboard of the Linux Kernel development cycles and its contributors">
+		<meta name="keywords" content="Linux, Kernel, Open Surce, Analytical, Dashboard">
+		<meta name="author" content="Rafael Passos <rafael@rcpassos.me>">
+		<meta name="author" content="Arthur Pilone Maia da Silva <arthurpilone@usp.br>">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
+		<!-- <script src="https://cdn.plot.ly/plotly-3.0.1.js" charset="utf-8"></script> -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.plot.ly/plotly-3.0.1.min.js" charset="utf-8"></script>
     <script src="static/script.js"></script>
     <link rel="stylesheet" href="static/style.css">
-    <style>
-        .plot-container {
-            position: relative;
-            width: 75vw;
-            height: 80vh;
-        }
-        .loading-spinner {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            display: none;
-            z-index: 1000;
-        }
-        .loading-spinner.active {
-            display: block;
-        }
-        @keyframes spin {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-    </style>
 </head>
 <body>
     <div id="app">
@@ -52,51 +26,73 @@
                 <div id="plotDiv" style="width:100%;height:100%;"></div>
             </div>
             <div id="controls">
-								Rollable Values
+								<div class="tooltip"> Rollable Values
+									<span class="tooltiptext">Values uniquely counted in the Sliding Window Length</span>
+								</div>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Authors" @change="replotOnToggle" />
-                    <label for="checkAuthors"> Authors </label>
+                    <label class="tooltip"> Authors
+											<span class="tooltiptext">Unique authors</span>
+										</label>
                 </div>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Committers" @change="replotOnToggle" />
-                    <label for="checkCommitters"> Committers </label>
+                    <label class="tooltip"> Committers
+											<span class="tooltiptext">Unique Committers</span>
+										</label>
                 </div>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Reviewed Bys" @change="replotOnToggle" />
-                    <label for="checkReviewed_Bys"> Reviewed-by's </label>
+                    <label class="tooltip"> Reviewed-by's
+											<span class="tooltiptext">Unique emails attributed as Reviewers</span>
+										</label>
                 </div>
                 <br>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Tested Bys" @change="replotOnToggle" />
-                    <label for="checkTested_Bys"> Tested-by's </label>
+                    <label class="tooltip"> Tested-by's 
+											<span class="tooltiptext">Unique emails attributed as Testers</span>
+										</label>
                 </div>
                 <br>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Suggested Bys" @change="replotOnToggle" />
-                    <label for="checkSuggested_Bys"> Suggested-by's </label>
+                    <label class="tooltip"> Suggested-by's 
+											<span class="tooltiptext">Unique emails attributed as Suggesters</span>
+										</label>
                 </div>
                 <br>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Reported Bys" @change="replotOnToggle" />
-                    <label for="checkReported_Bys"> Reported-by's </label>
+                    <label class="tooltip"> Reported-by's 
+											<span class="tooltiptext">Unique emails attributed as Reporters</span>
+										</label>
                 </div>
                 <br>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="ACK'd Bys" @change="replotOnToggle" />
-                    <label for="checkACKd_Bys"> ACK'd-by's </label>
+                    <label class="tooltip"> ACK'd-by's
+											<span class="tooltiptext">Unique emails giving ack's</span>
+										</label>
                 </div>
                 <br>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Authoring Maintainers" @change="replotOnToggle" />
-                    <label for="checkAuthoring_Maintainers"> Authoring Maintainers </label>
+                    <label class="tooltip"> Authoring Maintainers 
+											<span class="tooltiptext">Authors present in the Maintainers file</span>
+										</label>
                 </div>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Supporting Maintainers" @change="replotOnToggle" />
-                    <label for="checkSupporting_Maintainers"> Supporting Maintainers </label>
+                    <label class="tooltip"> Supporting Maintainers
+											<span class="tooltiptext">Participants present Maintainers file (everything but author/committer)</span>
+										</label>
                 </div>
                 <br>
                 <div>
-                    <label for="windowLen"> Sliding Window Length</label>
+                    <label class="tooltip"> Sliding Window Length 
+											<span class="tooltiptext">Date window size considered when counting unique contributors</span>
+										</label>
                     <select v-model="windowSize" @change="updateWindowLen">  
                         <option value="1">1 Day</option>
                         <option value="5">5 Days</option>
@@ -107,7 +103,9 @@
                         <option value="365">1 Year</option>
                     </select>
                 </div>
-								Absolute Values
+								<div class="tooltip"> Absolute Values
+									<span class="tooltiptext">Values always shown as daily absolute values</span>
+								</div>
                 <br>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Maintainers Listed" @change="replotOnToggle" />
@@ -149,6 +147,11 @@
                         <option value="Authors">Authors</option>
                         <option value="Committers">Committers</option>
                         <option value="Reviewed Bys">Reviewed Bys</option>
+                        <option value="Tested Bys">Tested Bys</option>
+                        <option value="Suggested Bys">Suggested Bys</option>
+                        <option value="Reported Bys">Reported Bys</option>
+                        <option value="Tested Bys">Tested Bys</option>
+                        <option value="ACK'd Bys">ACK'd Bys</option>
                         <option value="Maintainers Listed">Maintainers Listed</option>
                         <option value="Authoring Maintainers">Authoring Maintainers</option>
                         <option value="Supporting Maintainers">Supporting Maintainers</option>
@@ -163,6 +166,11 @@
                         <option value="Authors">Authors</option>
                         <option value="Committers">Committers</option>
                         <option value="Reviewed Bys">Reviewed Bys</option>
+                        <option value="Tested Bys">Tested Bys</option>
+                        <option value="Suggested Bys">Suggested Bys</option>
+                        <option value="Reported Bys">Reported Bys</option>
+                        <option value="Tested Bys">Tested Bys</option>
+                        <option value="ACK'd Bys">ACK'd Bys</option>
                         <option value="Maintainers Listed">Maintainers Listed</option>
                         <option value="Authoring Maintainers">Authoring Maintainers</option>
                         <option value="Supporting Maintainers">Supporting Maintainers</option>
