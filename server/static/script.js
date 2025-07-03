@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Reviewed Bys': {'axisLabel': 'Contributions', 'data': this.collectedCommits["attributions_reviewed"]},
                     'Tested Bys': {'axisLabel': 'Contributions', 'data': this.collectedCommits["attributions_tested"]},
                     'Suggested Bys': {'axisLabel': 'Contributions', 'data': this.collectedCommits["attributions_suggested"]},
-                    'Reported Bys': {'axisLabel': 'Contributions', 'data': this.collectedCommits["attributions_reporetd"]},
+                    'Reported Bys': {'axisLabel': 'Contributions', 'data': this.collectedCommits["attributions_reported"]},
                     "ACK'd Bys": {'axisLabel': 'Contributions', 'data': this.collectedCommits["attributions_ack"]},
                     'Authoring Maintainers': {'axisLabel': 'Contributions', 'data': this.collectedCommits["rolling_count_contributors"]},
                     'Supporting Maintainers': {'axisLabel': 'Contributions', 'data': this.collectedCommits["rolling_count_extra_contributors"]},

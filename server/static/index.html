@@ -47,28 +47,24 @@
 											<span class="tooltiptext">Unique emails attributed as Reviewers</span>
 										</label>
                 </div>
-                <br>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Tested Bys" @change="replotOnToggle" />
                     <label class="tooltip"> Tested-by's 
 											<span class="tooltiptext">Unique emails attributed as Testers</span>
 										</label>
                 </div>
-                <br>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Suggested Bys" @change="replotOnToggle" />
                     <label class="tooltip"> Suggested-by's 
 											<span class="tooltiptext">Unique emails attributed as Suggesters</span>
 										</label>
                 </div>
-                <br>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Reported Bys" @change="replotOnToggle" />
                     <label class="tooltip"> Reported-by's 
 											<span class="tooltiptext">Unique emails attributed as Reporters</span>
 										</label>
                 </div>
-                <br>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="ACK'd Bys" @change="replotOnToggle" />
                     <label class="tooltip"> ACK'd-by's
@@ -88,7 +84,6 @@
 											<span class="tooltiptext">Participants present Maintainers file (everything but author/committer)</span>
 										</label>
                 </div>
-                <br>
                 <div>
                     <label class="tooltip"> Sliding Window Length 
 											<span class="tooltiptext">Date window size considered when counting unique contributors</span>
@@ -103,10 +98,10 @@
                         <option value="365">1 Year</option>
                     </select>
                 </div>
+                <br>
 								<div class="tooltip"> Absolute Values
 									<span class="tooltiptext">Values always shown as daily absolute values</span>
 								</div>
-                <br>
                 <div>
                     <input type="checkbox" v-model="branchData.leftDataPoints" value="Maintainers Listed" @change="replotOnToggle" />
                     <label for="checkMaintainers_Listed"> Entries on MAINTEINERS file </label>
