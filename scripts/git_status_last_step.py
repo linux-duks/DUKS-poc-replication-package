@@ -166,7 +166,7 @@ def run():
                     ack.add(email)
                 elif "revi" in contrib_type:
                     reviewed.add(email)
-                elif "report" in contrib_type:
+                elif "repor" in contrib_type:
                     reported.add(email)
                 elif "test" in contrib_type:
                     tested.add(email)

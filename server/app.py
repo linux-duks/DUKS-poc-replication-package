@@ -29,7 +29,6 @@ def get_commits():
     if request.method == "OPTIONS":  # CORS preflight
         return _build_cors_preflight_response()
     elif request.method == "GET":
-        # date_window_size, off by default
         window_size = request.args.get("window_size", "1d")
         if "d" not in window_size:
             window_size = window_size + "d"
