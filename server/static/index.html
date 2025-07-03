@@ -85,6 +85,24 @@
 										</label>
                 </div>
                 <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Committing Maintainers" @change="replotOnToggle" />
+                    <label class="tooltip"> Committing Maintainers
+											<span class="tooltiptext">Commiters present Maintainers file</span>
+										</label>
+                </div>
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Supporting Contributors" @change="replotOnToggle" />
+                    <label class="tooltip"> Supporting Contributors
+											<span class="tooltiptext">All contributors but author/committer</span>
+										</label>
+                </div>
+                <div>
+                    <input type="checkbox" v-model="branchData.leftDataPoints" value="Total Contributors" @change="replotOnToggle" />
+                    <label class="tooltip"> Total Contributors
+											<span class="tooltiptext">All contributors</span>
+										</label>
+                </div>
+                <div>
                     <label class="tooltip"> Sliding Window Length 
 											<span class="tooltiptext">Date window size considered when counting unique contributors</span>
 										</label>
@@ -147,9 +165,11 @@
                         <option value="Reported Bys">Reported Bys</option>
                         <option value="Tested Bys">Tested Bys</option>
                         <option value="ACK'd Bys">ACK'd Bys</option>
-                        <option value="Maintainers Listed">Maintainers Listed</option>
                         <option value="Authoring Maintainers">Authoring Maintainers</option>
                         <option value="Supporting Maintainers">Supporting Maintainers</option>
+                        <option value="Committing Maintainers">Committing Maintainers</option>
+                        <option value="Total Contributors">Total Contributors</option>
+                        <option value="Maintainers Listed">Maintainers Listed</option>
                         <option value="Commits">Commits</option>
                         <option value="LoC Added">LoC Added</option>
                         <option value="LoC Removed">LoC Removed</option>
@@ -166,9 +186,12 @@
                         <option value="Reported Bys">Reported Bys</option>
                         <option value="Tested Bys">Tested Bys</option>
                         <option value="ACK'd Bys">ACK'd Bys</option>
-                        <option value="Maintainers Listed">Maintainers Listed</option>
                         <option value="Authoring Maintainers">Authoring Maintainers</option>
                         <option value="Supporting Maintainers">Supporting Maintainers</option>
+                        <option value="Committing Maintainers">Committing Maintainers</option>
+                        <option value="Maintainers Listed">Maintainers Listed</option>
+                        <option value="Total Contributors">Total Contributors</option>
+                        <option value="Maintainers Listed">Maintainers Listed</option>
                         <option value="Commits">Commits</option>
                         <option value="LoC Added">LoC Added</option>
                         <option value="LoC Removed">LoC Removed</option>

@@ -64,6 +64,22 @@ def load_data(window_date_size="1d"):
             rolling_count_row_of_lists(
                 pl.col("attributions_tested"), "committer_date", window_date_size
             ).alias("attributions_tested"),
+            # author_in_maintainers_file
+            rolling_count_row_of_lists(
+                pl.col("author_in_maintainers_file"), "committer_date", window_date_size
+            ).alias("author_in_maintainers_file"),
+            # committer_in_maintainers_file
+            rolling_count_row_of_lists(
+                pl.col("committer_in_maintainers_file"),
+                "committer_date",
+                window_date_size,
+            ).alias("committer_in_maintainers_file"),
+            # extra_attributions_in_maintainers_file
+            rolling_count_row_of_lists(
+                pl.col("extra_attributions_in_maintainers_file"),
+                "committer_date",
+                window_date_size,
+            ).alias("extra_attributions_in_maintainers_file"),
         ]
     )
 
@@ -71,11 +87,8 @@ def load_data(window_date_size="1d"):
     df = df.drop(
         "all_contributors",
         "author",
-        "author_in_maintainers_file",
         "attributions",
         "committer",
-        "committer_in_maintainers_file",
-        "extra_attributions_in_maintainers_file",
         "extra_contributors",
     )
 

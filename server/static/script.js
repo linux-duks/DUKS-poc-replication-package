@@ -141,8 +141,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Suggested Bys': {'axisLabel': 'Contributions', 'data': this.collectedCommits["attributions_suggested"]},
                     'Reported Bys': {'axisLabel': 'Contributions', 'data': this.collectedCommits["attributions_reported"]},
                     "ACK'd Bys": {'axisLabel': 'Contributions', 'data': this.collectedCommits["attributions_ack"]},
-                    'Authoring Maintainers': {'axisLabel': 'Contributions', 'data': this.collectedCommits["rolling_count_contributors"]},
-                    'Supporting Maintainers': {'axisLabel': 'Contributions', 'data': this.collectedCommits["rolling_count_extra_contributors"]},
+                    'Authoring Maintainers': {'axisLabel': 'Contributions', 'data': this.collectedCommits["author_in_maintainers_file"]},
+                    'Supporting Maintainers': {'axisLabel': 'Contributions', 'data': this.collectedCommits["extra_attributions_in_maintainers_file"]},
+                    'Committing Maintainers': {'axisLabel': 'Contributions', 'data': this.collectedCommits["committer_in_maintainers_file"]},
+                    'Supporting Contributors': {'axisLabel': 'Contributions', 'data': this.collectedCommits["rolling_count_extra_contributors"]},
+                    'Total Contributors': {'axisLabel': 'Contributions', 'data': this.collectedCommits["rolling_count_contributors"]},
                 };
 
 								let dates = this.collectedCommits["committer_date"];
