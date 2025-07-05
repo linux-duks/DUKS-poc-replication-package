@@ -1,17 +1,14 @@
 # 🦆 DUKS - Dashboard for Unified Kernel Statistics
 
-This is a work in progress.
-[duks.rcpassos.me](https://duks.rcpassos.me)
-
-
 ## This repository contains the data files, they should be put under the /data folder
+
 The data file is committed with git lfs.
 It is also available in the release artifact.
 
 Decompress data :
 `$ tar --zstd -xvf data.tar.zst`
 
-Skip to [##Running application]
+Skip to ##Running application
 
 ## Running from zero
 
