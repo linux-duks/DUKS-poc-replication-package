@@ -6,6 +6,7 @@ import os
 
 from pygit2 import Repository
 
+kernel_path = os.getenv("KERNEL_PATH", ".")
 DEBUG = os.getenv("DEBUG", "false")
 level = logging.INFO
 if DEBUG != "false":
@@ -45,7 +46,7 @@ def checkout_and_read_file(repo: Repository, sha: str) -> list[str]:
         return
 
     maintain_emails = subprocess.run(
-        ["awk", '/^M:|^R:/{print $NF}', "MAINTAINERS"],
+        ["awk", "/^M:|^R:/{print $NF}", "MAINTAINERS"],
         cwd=repo.workdir,
         capture_output=True,
         text=True,
@@ -61,7 +62,7 @@ def checkout_and_read_file(repo: Repository, sha: str) -> list[str]:
 
 def run(kernel_path: str):
     tags_file = open(
-        "../data/maintainers.csv", "w", newline="", buffering=1, encoding="utf-8"
+        "./data/maintainers.csv", "w", newline="", buffering=1, encoding="utf-8"
     )
     tags_writer = csv.writer(
         tags_file, delimiter="|", quoting=csv.QUOTE_ALL, lineterminator="\n"
@@ -87,5 +88,4 @@ def run(kernel_path: str):
 
 
 if __name__ == "__main__":
-    kernel_path = os.getenv("KERNEL_PATH", ".")
     run(kernel_path)

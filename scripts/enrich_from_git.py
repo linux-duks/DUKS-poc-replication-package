@@ -9,6 +9,8 @@ from datetime import timedelta, datetime
 
 from pygit2 import Repository
 
+kernel_path = os.getenv("KERNEL_PATH", ".")
+
 DEBUG = os.getenv("DEBUG", "false")
 level = logging.INFO
 if DEBUG != "false":
@@ -68,7 +70,9 @@ def read_tags(repo: Repository) -> list[[str]]:
                         commit_time = datetime.fromtimestamp(commit.commit_time)
                         (+timedelta(minutes=commit.commit_time_offset),)
                     except Exception as e:
-                        logging.info(f"{sha} git object is probably not a commit: %s", e)
+                        logging.info(
+                            f"{sha} git object is probably not a commit: %s", e
+                        )
                     tag_version = match.group(1)
                     tag_list.append(
                         [
@@ -85,7 +89,7 @@ def read_tags(repo: Repository) -> list[[str]]:
 
 
 def write_tags_file(tags: list[[str]]):
-    tags_file = open("../data/tags.csv", "w", newline="", buffering=1, encoding="utf-8")
+    tags_file = open("./data/tags.csv", "w", newline="", buffering=1, encoding="utf-8")
     tags_writer = csv.writer(
         tags_file, delimiter="|", quoting=csv.QUOTE_ALL, lineterminator="\n"
     )
@@ -103,15 +107,14 @@ def run(kernel_path: str):
     repo = Repository(kernel_path)
     repo.get(INITIAL_COMMIT)
 
-    data = open("../data/commits.csv").read()
-    reader = csv.DictReader(StringIO(data), delimiter="|")
+    commits_file = open("./data/commits.csv", "r")
+    reader = csv.DictReader(commits_file, delimiter="|")
 
-    file = open("../data/enhanced.csv", "w", newline="", buffering=1, encoding="utf-8")
+    file = open("./data/enhanced.csv", "w", newline="", buffering=1, encoding="utf-8")
     writer = csv.writer(file, delimiter="|", quoting=csv.QUOTE_ALL, lineterminator="\n")
     writer.writerow(
         [
             "commit",
-            # "parents",
             "committer_date",
             "author_date",
             "insertions",
@@ -169,5 +172,4 @@ def run(kernel_path: str):
 
 
 if __name__ == "__main__":
-    kernel_path = os.getenv("KERNEL_PATH", ".")
     run(kernel_path)

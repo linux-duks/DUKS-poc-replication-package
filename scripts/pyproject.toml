@@ -12,3 +12,12 @@ dependencies = [
     "pygit2>=1.18.0",
     "swh-graph>=6.7.6",
 ]
+
+[tool.setuptools]
+py-modules = []
+# packages = [
+# 	"enrich_from_git.py",
+# 	"get_official_kernel_maintainers.py",
+# 	"grpc_script.py",
+# 	"stitch_data_into_final_payload.py"
+# ]

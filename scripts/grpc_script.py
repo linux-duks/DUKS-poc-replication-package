@@ -13,12 +13,13 @@ import swh.graph.grpc.swhgraph_pb2_grpc as swhgraph_grpc
 # from google.protobuf.field_mask_pb2 import FieldMask
 
 
-GRAPH_GRPC_SERVER = "0.0.0.0:50091"
+# limit for debug purposes
 LIMIT = 0
+GRAPH_GRPC_SERVER = os.getenv("GRAPH_GRPC_SERVER", "0.0.0.0:50091")
 PRE_LOAD_COMMITS_FROM = os.getenv("PRE_LOAD_COMMITS_FROM_STDIN", "false") != "false"
-# defaults to the last commit available in the swh exported graph
+# defaults to the first commit available in the swh exported graph
 INITIAL_NODE = os.getenv(
-    "INITIAL_NODE", "swh:1:rev:4a2d78822fdf1556dfbbfaedd71182fe5b562194"
+    "INITIAL_NODE", "swh:1:rev:0b5ea1e230432d79ce985338bbcbab1f82ae26a0"
 )
 
 DEBUG = os.getenv("DEBUG", "false")
@@ -143,25 +144,18 @@ def write_commit(writer: csv.writer, current_node_response):
         [
             # commit sha1
             current_node_response.swhid.lstrip("swh:1:rev:"),
-            # all successor ids
-            # orjson.dumps(
-            #     [
-            #         succ.swhid.lstrip("swh:1:rev")
-            #         for succ in current_node_response.successor
-            #         if succ.swhid.startswith("swh:1:rev")
-            #     ]
-            # ).decode(),  # parents
+            # committer_date
             (
                 datetime.utcfromtimestamp(current_node_response.rev.committer_date)
                 + timedelta(minutes=current_node_response.rev.committer_date_offset)
-            ).strftime("%Y-%m-%dT%H:%M:%S"),  # committer_date
+            ).strftime("%Y-%m-%dT%H:%M:%S"),
+            # author_date
             (
                 datetime.utcfromtimestamp(current_node_response.rev.author_date)
                 + timedelta(minutes=current_node_response.rev.author_date_offset)
-            ).strftime("%Y-%m-%dT%H:%M:%S"),  # author_date
-            orjson.dumps(
-                attributions
-            ).decode(),  # attributions: dict with authors, acks, reviews...
+            ).strftime("%Y-%m-%dT%H:%M:%S"),
+            # attributions: dict with authors, acks, reviews...
+            orjson.dumps(attributions).decode(),
             # diffs when available in the graph
             # 0,
             # 0,
@@ -170,12 +164,11 @@ def write_commit(writer: csv.writer, current_node_response):
 
 
 def main():
-    file = open("../data/file.csv", "w", newline="", buffering=1, encoding="utf-8")
+    file = open("./data/commits.csv", "w", newline="", buffering=1, encoding="utf-8")
     writer = csv.writer(file, delimiter="|", quoting=csv.QUOTE_ALL, lineterminator="\n")
     writer.writerow(
         [
             "commit",
-            # "parents",
             "committer_date",
             "author_date",
             "attributions",
@@ -233,15 +226,18 @@ def main():
                             and succ.swhid not in visited
                         ):
                             queue.append(succ.swhid)
-                        # else:
-                        #     print("READING NODE", succ)
-                        #     dir_current_node_response = stub.GetNode(
-                        #         swhgraph.GetNodeRequest(
-                        #             swhid=succ_swhid,
-                        #             # mask=FieldMask(paths=["swhid", "rev.message", "rev.author"]),
-                        #         )
-                        #     )
-                        #     print(dir_current_node_response)
+                        elif DEBUG != "false" and succ.swhid not in visited:
+                            logging.debug(f"Found a non-revision node: {succ.swhid}")
+                            if not succ.swhid.startswith("swh:1:dir"):
+                                nodeInfo = stub.GetNode(
+                                    swhgraph.GetNodeRequest(
+                                        swhid=succ.swhid,
+                                        # mask=FieldMask(paths=["swhid", "rev.message", "rev.author"]),
+                                    )
+                                )
+                                logging.debug(
+                                    f"Non dir/revision node found: {nodeInfo}"
+                                )
 
                     # add current commit to writer
                     write_commit(writer, current_node_response)
