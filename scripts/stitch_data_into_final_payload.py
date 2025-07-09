@@ -42,10 +42,10 @@ def merge_aggregated_attributions(attributions_list: list[str]) -> str | None:
 
 
 def run():
-    commits = pl.read_csv("../data/enhanced.csv", separator="|", try_parse_dates=True)
+    commits = pl.read_csv("./data/enhanced.csv", separator="|", try_parse_dates=True)
     print(commits.head())
 
-    maintainers = pl.read_csv("../data/maintainers.csv", separator="|")
+    maintainers = pl.read_csv("./data/maintainers.csv", separator="|")
 
     maintainers = maintainers.with_columns(
         [
@@ -142,7 +142,16 @@ def run():
         pl.struct(["author", "committer", "extra_contributors", "maintainers"])
         .map_elements(
             intersect,
-            return_dtype=pl.Struct,
+            return_dtype=pl.Struct(
+                [
+                    pl.Field("author_in_maintainers_file", pl.String),
+                    pl.Field("committer_in_maintainers_file", pl.String),
+                    pl.Field(
+                        "extra_attributions_in_maintainers_file",
+                        pl.List(pl.String),
+                    ),
+                ]
+            ),
         )
         .alias("intersect")
     ).unnest("intersect")
@@ -179,27 +188,38 @@ def run():
         suggested = list(suggested)
         tested = list(tested)
 
-        # return {
-        obj = {
+        return {
             "attributions_ack": ack if len(ack) > 0 else None,
             "attributions_reviewed": reviewed if len(reviewed) > 0 else None,
             "attributions_reported": reported if len(reported) > 0 else None,
             "attributions_suggested": suggested if len(suggested) > 0 else None,
             "attributions_tested": tested if len(tested) > 0 else None,
         }
-        # print(obj)
-        return obj
 
     df = df.with_columns(
         pl.col("attributions")
         .str.json_decode(
             dtype=pl.List(
-                pl.Struct({"type": pl.String, "name": pl.String, "email": pl.String})
+                pl.Struct(
+                    [
+                        pl.Field("type", pl.String),
+                        pl.Field("name", pl.String),
+                        pl.Field("email", pl.String),
+                    ]
+                )
             )
         )
         .map_elements(
             lambda s: parse_known_tags_from_attributions(s),
-            return_dtype=pl.Struct,
+            return_dtype=pl.Struct(
+                [
+                    pl.Field("attributions_ack", pl.List(pl.String)),
+                    pl.Field("attributions_reviewed", pl.List(pl.String)),
+                    pl.Field("attributions_reported", pl.List(pl.String)),
+                    pl.Field("attributions_suggested", pl.List(pl.String)),
+                    pl.Field("attributions_tested", pl.List(pl.String)),
+                ]
+            ),
         )
         .alias("attributions_list")
     ).unnest("attributions_list")
@@ -212,7 +232,7 @@ def run():
     logging.info("writing by_commit.parquet file ")
 
     df = df.drop("maintainers")
-    df.write_parquet("../data/by_commit.parquet")
+    df.write_parquet("./data/by_commit.parquet")
 
     # transform to rows by date
     df = df.lazy()
@@ -331,7 +351,7 @@ def run():
     logging.info("writing by_date.parquet file ")
     logging.info(df)
     logging.info(df.columns)
-    df.write_parquet("../data/by_date.parquet")
+    df.write_parquet("./data/by_date.parquet")
 
 
 if __name__ == "__main__":
