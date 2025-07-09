@@ -138,8 +138,31 @@ def extract_attributions(commit_message) -> (list[dict], list[str]):
 
 
 def write_commit(writer: csv.writer, current_node_response):
-    attributions = extract_attributions(str(current_node_response.rev.message.decode()))
-
+    # there are messages with non utf8 encoding
+    # this will try to decode them in utf8, cp1252 utf8 with replace (? char), or ignore with empty string
+    message = current_node_response.rev.message
+    try:
+        attributions = extract_attributions(str(message.decode()))
+    except Exception as e:
+        logging.error(
+            f"Failed to decode node message with unicode: {current_node_response.swhid}, message: {message}, error: {e}"
+        )
+        try:
+            attributions = extract_attributions(str(message.decode(encoding="cp1252")))
+        except Exception as e:
+            logging.error(
+                f"Failed to decode node message with cp1252: {current_node_response.swhid}, message: {message}, error: {e}"
+            )
+            try:
+                attributions = extract_attributions(
+                    str(message.decode(errors="replace"))
+                )
+            except Exception as e:
+                logging.error(
+                    f"Failed to decode node message with cp1252: {current_node_response.swhid}, message: {message}, error: {e}"
+                )
+                # if even replace fails, ignore the message
+                attributions = ""
     writer.writerow(
         [
             # commit sha1
@@ -207,13 +230,19 @@ def main():
                     visited.add(current_node)
                     logging.info(f"Visiting {current_node}")
 
-                    # GetNode details from graph
-                    current_node_response = stub.GetNode(
-                        swhgraph.GetNodeRequest(
-                            swhid=current_node,
-                            # mask=FieldMask(paths=["swhid", "rev.message", "rev.author"]),
+                    try:
+                        # GetNode details from graph
+                        current_node_response = stub.GetNode(
+                            swhgraph.GetNodeRequest(
+                                swhid=current_node,
+                                # mask=FieldMask(paths=["swhid", "rev.message", "rev.author"]),
+                            )
                         )
-                    )
+                    except Exception as e:
+                        logging.exception(
+                            f"skipped node {current_node}  because of exception: {e}"
+                        )
+                        continue
 
                     # logging.debug(f"Current node response: {current_node_response}")
                     node_num += 1
@@ -243,7 +272,7 @@ def main():
                     write_commit(writer, current_node_response)
 
             except Exception as e:
-                logging.error(e)
+                logging.exception(e)
                 break
 
             if node_num > LIMIT and LIMIT > 0:
