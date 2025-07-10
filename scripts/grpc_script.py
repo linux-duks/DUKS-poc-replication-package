@@ -5,22 +5,28 @@ import re
 import csv
 from datetime import datetime, timedelta
 from collections import deque
+import hashlib
 
 import orjson
 import grpc
 import swh.graph.grpc.swhgraph_pb2 as swhgraph
 import swh.graph.grpc.swhgraph_pb2_grpc as swhgraph_grpc
+
 # from google.protobuf.field_mask_pb2 import FieldMask
+# from google.protobuf.json_format import MessageToDict
 
 
 # limit for debug purposes
 LIMIT = 0
 GRAPH_GRPC_SERVER = os.getenv("GRAPH_GRPC_SERVER", "0.0.0.0:50091")
 PRE_LOAD_COMMITS_FROM = os.getenv("PRE_LOAD_COMMITS_FROM_STDIN", "false") != "false"
-# defaults to the first commit available in the swh exported graph
-INITIAL_NODE = os.getenv(
-    "INITIAL_NODE", "swh:1:rev:0b5ea1e230432d79ce985338bbcbab1f82ae26a0"
+KERNEL_TREE = os.getenv(
+    "KERNEL_TREE", "git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
 )
+# defaults to the last commit available in the swh exported graph
+# if provided, the script will skip searching by origin (kernel tree)
+INITIAL_NODE = os.getenv("INITIAL_NODE", "")
+DEFAULT_BRANCH = os.getenv("DEFAULT_BRANCH", "master")
 
 DEBUG = os.getenv("DEBUG", "false")
 level = logging.INFO
@@ -137,36 +143,43 @@ def extract_attributions(commit_message) -> (list[dict], list[str]):
 #     return links
 
 
-def write_commit(writer: csv.writer, current_node_response):
-    # there are messages with non utf8 encoding
-    # this will try to decode them in utf8, cp1252 utf8 with replace (? char), or ignore with empty string
-    message = current_node_response.rev.message
+# there are messages with non utf8 encoding
+# this will try to decode them in utf8, cp1252 utf8 with replace (? char), or ignore with empty string
+def decode_message(swhid: str, input_message: str) -> str:
+    message = ""
     try:
-        attributions = extract_attributions(str(message.decode()))
+        message = input_message.decode("utf-8")
     except Exception as e:
         logging.error(
-            f"Failed to decode node message with unicode: {current_node_response.swhid}, message: {message}, error: {e}"
+            f"Failed to decode node message with unicode: {swhid}, message: {input_message}, error: {e}"
         )
         try:
-            attributions = extract_attributions(str(message.decode(encoding="cp1252")))
+            message = input_message.decode(encoding="cp1252")
         except Exception as e:
             logging.error(
-                f"Failed to decode node message with cp1252: {current_node_response.swhid}, message: {message}, error: {e}"
+                f"Failed to decode node message with cp1252: {swhid}, message: {input_message}, error: {e}"
             )
             try:
-                attributions = extract_attributions(
-                    str(message.decode(errors="replace"))
-                )
+                message = input_message.decode("utf-8", errors="replace")
             except Exception as e:
                 logging.error(
-                    f"Failed to decode node message with cp1252: {current_node_response.swhid}, message: {message}, error: {e}"
+                    f"Failed to decode node message with utf-8 using replace mode: {swhid}, message: {input_message}, error: {e}"
                 )
                 # if even replace fails, ignore the message
-                attributions = ""
+                message = ""
+    return message
+
+
+def write_commit(writer: csv.writer, current_node_response, tag_map):
+    attributions = extract_attributions(
+        decode_message(current_node_response.swhid, current_node_response.rev.message)
+    )
+    commit_sha1 = current_node_response.swhid.lstrip("swh:1:rev:")
+    tag = tag_map.get(commit_sha1)
     writer.writerow(
         [
             # commit sha1
-            current_node_response.swhid.lstrip("swh:1:rev:"),
+            commit_sha1,
             # committer_date
             (
                 datetime.utcfromtimestamp(current_node_response.rev.committer_date)
@@ -179,6 +192,7 @@ def write_commit(writer: csv.writer, current_node_response):
             ).strftime("%Y-%m-%dT%H:%M:%S"),
             # attributions: dict with authors, acks, reviews...
             orjson.dumps(attributions).decode(),
+            tag,
             # diffs when available in the graph
             # 0,
             # 0,
@@ -195,6 +209,7 @@ def main():
             "committer_date",
             "author_date",
             "attributions",
+            "tag",
             # "diff_plus",
             # "diff_minus",
         ]
@@ -202,7 +217,7 @@ def main():
 
     node_num = 0
     visited = set()
-    queue = UniqueDeque([INITIAL_NODE])
+    queue = UniqueDeque()
 
     # can be used with :
     # $ tail -n +2 file.csv | awk -F'|' '{print $1}' | PRE_LOAD_COMMITS_FROM_STDIN=true uv run python grpc_script.py
@@ -219,6 +234,64 @@ def main():
 
     with grpc.insecure_channel(GRAPH_GRPC_SERVER) as channel:
         stub = swhgraph_grpc.TraversalServiceStub(channel)
+
+        origin_sha1 = hashlib.sha1(KERNEL_TREE.encode("utf-8")).hexdigest()
+
+        # or look for initial node, by loading the ORIGIN
+        # load releases and last commit from origin
+        origin_node = stub.GetNode(
+            swhgraph.GetNodeRequest(
+                swhid=f"swh:1:ori:{origin_sha1}",
+                # mask=FieldMask(paths=["swhid", "rev.message", "rev.author"]),
+            )
+        )
+        # print(origin_node)
+        # get the last snapshot
+        last_snapshot = None
+        for succ in origin_node.successor:
+            if last_snapshot is None:
+                last_snapshot = succ
+            else:
+                # TODO: check if there are other labels
+                visit_timestamp = last_snapshot.label[0].visit_timestamp
+                suucc_timestamp = succ.label[0].visit_timestamp
+                if suucc_timestamp > visit_timestamp:
+                    last_snapshot = succ
+        last_snapshot = stub.GetNode(
+            swhgraph.GetNodeRequest(
+                swhid=last_snapshot.swhid,
+            )
+        )
+        rev_rel_map = {}
+
+        logging.info("Lokking for starting commit and building release map")
+
+        for succ in last_snapshot.successor:
+            # if succ.swhid.startswith("swh:1:rev"):
+            if succ.swhid.startswith("swh:1:rev") and succ.label[
+                0
+            ].name.decode().endswith(DEFAULT_BRANCH):
+                print(f"INITIAL_NODE will be {succ}, {succ.label[0].name.decode()}")
+                queue.append(succ.swhid)
+            # TODO: pick commits from other branches too ?
+
+            elif succ.swhid.startswith("swh:1:rel"):
+                tag = stub.GetNode(
+                    swhgraph.GetNodeRequest(
+                        swhid=succ.swhid,
+                    )
+                )
+
+                for succ in tag.successor:
+                    rev_rel_map[succ.swhid.lstrip("swh:1:rev:")] = tag.rel.name.decode(
+                        "utf-8"
+                    )
+            # print(rev_rel_map)
+            # print(last_snapshot)
+
+        # start from INITIAL_NODE if set
+        if INITIAL_NODE:
+            queue = UniqueDeque([INITIAL_NODE])
 
         logging.info(f"Preparing BFS with {queue}")
         while queue:
@@ -269,7 +342,7 @@ def main():
                                 )
 
                     # add current commit to writer
-                    write_commit(writer, current_node_response)
+                    write_commit(writer, current_node_response, rev_rel_map)
 
             except Exception as e:
                 logging.exception(e)
