@@ -10,6 +10,7 @@ from pygit2 import Repository
 
 kernel_path = os.getenv("KERNEL_PATH", ".")
 
+LOAD_TAGS_FROM_REPO = os.getenv("LOAD_TAGS_FROM_REPO", "false") != "false"
 DEBUG = os.getenv("DEBUG", "false")
 level = logging.INFO
 if DEBUG != "false":
@@ -125,13 +126,14 @@ def run(kernel_path: str):
         ]
     )
 
-    # read all tags from repo
-    tags = read_tags(repo)
-    # write a tag:commit csv file
-    write_tags_file(tags)
+    if LOAD_TAGS_FROM_REPO:
+        # read all tags from repo
+        tags = read_tags(repo)
+        # write a tag:commit csv file
+        write_tags_file(tags)
 
-    # map commit:tag for reverse lookup
-    tag_map = {tagl[1]: tagl[0] for tagl in tags}
+        # map commit:tag for reverse lookup
+        tag_map = {tagl[1]: tagl[0] for tagl in tags}
 
     for row in reader:
         commit = repo.get(row["commit"])
@@ -163,7 +165,10 @@ def run(kernel_path: str):
                     fix_attributions(
                         row["attributions"], commit.author, commit.committer
                     ),
-                    tag_map.get(row["commit"]),
+                    # load tag from original file or from Repository
+                    tag_map.get(row["commit"])
+                    if LOAD_TAGS_FROM_REPO
+                    else row.get("tag"),
                 ]
             )
 
