@@ -3,8 +3,10 @@
 This is a work in progress.
 [duks.rcpassos.me](https://duks.rcpassos.me)
 
+Demo video: <https://youtu.be/2RvUgzdr1fo> or compressed file:  [demo.x265.mp4](demo.x265.mp4)
 
 ## This repository contains the data files, they should be put under the /data folder
+
 The data file is committed with git lfs.
 It is also available in the release artifact.
 
